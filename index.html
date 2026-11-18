@@ -155,13 +155,14 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .ework{display:flex;gap:6px;flex:1;min-height:0}
 .ework #eX{min-width:0}
 #eCol{display:none}
+#eCol:empty{display:none!important}
 /* celular: acordes numa coluna à direita (dentro do app do Claude não dá para colar no teclado) */
 @media (max-width:560px){#eCol{display:flex;flex-direction:column;gap:6px;width:64px;flex:none;overflow-y:auto;margin-block:6px 8px;-webkit-overflow-scrolling:touch}
   #eCol #eCh{flex-direction:column;overflow:visible;flex:none;gap:6px}
   #eCol #eCh .mini{min-width:0;width:100%;padding:6px 2px;font-size:.8rem}
   #eCol #eCh .sep{white-space:normal;text-align:center;font-size:.62rem;padding:2px 0}
   #eCol #eKb{width:100%;padding:6px 2px}
-  .edock{display:none}}
+  .edock:not(:has(#eCh)){display:none}} /* só some quando os acordes foram para a coluna */
 #eCh .mini{flex:none;font-weight:700;color:var(--chord);min-width:44px}
 #eCh .sep{flex:none;align-self:center;color:var(--muted);font-size:.75rem;padding-inline:4px;white-space:nowrap}
 .list{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
@@ -191,7 +192,8 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 
 <section id="lib" class="wrapx">
   <div class="lhead">
-    <h1>Calisto <small>v0 · protótipo</small></h1>
+    <h1>Calisto <small>v1</small></h1>
+    <button id="cloudBtn" class="mini" hidden>☁︎ Entrar</button>
     <input type="file" id="file" multiple hidden><!-- sem "accept": o iPhone não conhece .onsong e deixava os arquivos cinza -->
     <button id="fileBtn">Importar cifras</button>
   </div>
@@ -386,7 +388,12 @@ function setPlayed(id,on){const ids=playedIds();const i=ids.indexOf(id);if(on&&i
 
 /* ---------- biblioteca ---------- */
 function uid(){return Math.random().toString(36).slice(2,10)}
-function save(){store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui)}
+function save(){store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui);if(window.calistoSync)calistoSync.changed()}
+// ponte para a sincronização (sync.js, só na versão oficial): ler o estado e aplicar o que veio da nuvem sem disparar save()
+window.calistoApp={state:()=>({songs,pls,prefs,ui}),
+  apply(o){if(o.songs){songs=o.songs;songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
+    if(o.singers){ui.singers=o.singers;store.set('ui',ui)}if(curPl&&!plOf(curPl)){curPl=null;if(view==='pl')view='pls'}drawList()},
+  modal:(...a)=>modal(...a),close:()=>closeModal(),toast:m=>toast(m)};
 // biblioteca convertida do backup do OnSong: músicas + playlists (com o tom de cada set). Não sobrescreve o que já existe.
 function importLib(o){const map={};let add=0,same=0,pa=0;
   for(const x of o.songs||[]){const ex=songs.find(s=>s.title.toLowerCase()===x.title.toLowerCase()&&s.artist.toLowerCase()===(x.artist||'').toLowerCase());
@@ -692,7 +699,7 @@ function fitEditor(){const ed=$('editor'),vv=window.visualViewport;if(ed.hidden|
   ed.style.top=vv.offsetTop+'px';ed.style.height=vv.height+'px';ed.style.bottom='auto';ed.classList.toggle('kb',window.innerHeight-vv.height>120)}
 if(window.visualViewport){visualViewport.addEventListener('resize',fitEditor);visualViewport.addEventListener('scroll',fitEditor)}
 // celular: a fileira de acordes vira coluna à direita do texto (dentro do app do Claude o iPhone não informa a altura do teclado)
-function placeChords(){const mob=window.innerWidth<=560;const col=$('eCol'),dock=$('eDock');
+function placeChords(){const mob=window.innerWidth<=560&&inFrame; /* fora do app do Claude (versão oficial) os acordes ficam colados no teclado */const col=$('eCol'),dock=$('eDock');
   if(mob){if($('eKb').parentNode!==col)col.prepend($('eKb'));if($('eCh').parentNode!==col)col.append($('eCh'))}
   else{if($('eCh').parentNode!==dock)dock.prepend($('eCh'));if($('eKb').parentNode!==dock)dock.append($('eKb'))}}
 window.addEventListener('resize',()=>{if(!$('editor').hidden)placeChords()});
@@ -724,5 +731,6 @@ drawList();
 })();
 </script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){const t=document.getElementById('toast');if(t){t.textContent='Calisto atualizado. Feche e abra para usar a versão nova.';t.hidden=false;setTimeout(()=>t.hidden=true,5000)}}})})}).catch(()=>{})})}</script>
+<script type="module" src="sync.js"></script>
 </body>
 </html>
