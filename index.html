@@ -784,5 +784,6 @@ drawList();
 </script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){const t=document.getElementById('toast');if(t){t.textContent='Calisto atualizado. Feche e abra para usar a versão nova.';t.hidden=false;setTimeout(()=>t.hidden=true,5000)}}})})}).catch(()=>{})})}</script>
 <script type="module" src="sync.js"></script>
+<script type="module" src="spotify.js"></script>
 </body>
 </html>
