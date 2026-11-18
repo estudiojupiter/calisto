@@ -66,6 +66,7 @@ const nt = x => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-
 function bate(a, b) { // o nome da faixa do Spotify confere com o da cifra?
   a = nt(a); b = nt(b); if (!a || !b) return false;
   if (a === b || a.startsWith(b) || b.startsWith(a)) return true;
+  const a0 = a.replace(/ /g, ''), b0 = b.replace(/ /g, ''); if (a0 === b0) return true; /* 3AM = 3 AM */
   const A = new Set(a.split(' ')), B = b.split(' ');
   return B.filter(w => A.has(w)).length / Math.max(A.size, B.length) >= 0.6;
 }
@@ -123,7 +124,9 @@ async function aprender(p, atual) {
     for (const m of p.spotify.map) {
       if (naLista.has(m.uri)) continue;
       const s = by0[m.song]; if (!s) continue;
-      const k = novas.findIndex(t => bate(t.name, limpa(s.title).split('+')[0]));
+      let k = novas.findIndex(t => bate(t.name, limpa(s.title).split('+')[0]));
+      if (k < 0) { const pos = p.spotify.map.indexOf(m), t0 = atual[pos]; if (t0 && !doMapa.has(t0.uri)) k = novas.indexOf(t0); } /* nome diferente: vale a mesma posição */
+      if (k < 0 && novas.length === 1 && p.spotify.map.filter(x => !naLista.has(x.uri)).length === 1) k = 0; /* só uma troca: é ela */
       if (k >= 0) { const t = novas.splice(k, 1)[0]; s.sp = { uri: t.uri, nome: t.name, art: artistas(t) }; m.uri = t.uri; n++; }
     }
     if (n) app.save();
@@ -158,21 +161,32 @@ async function conferir(p) {
 }
 async function escolher(p, s) {
   if (!s) return;
-  app.toast('Procurando versões…');
   const t = limpa(s.title).split('+')[0].trim(), a = String(s.artist || '').split(/[,/&]| e | feat\.? /i)[0].trim();
-  const vistos = new Set(), op = [];
-  for (const q of [a ? `track:${t} artist:${a}` : t, t, `${t} ao vivo`, `${t} live`]) {
-    try { const r = await api('/search?' + new URLSearchParams({ q, type: 'track', limit: '8' }));
-      for (const x of (r && r.tracks && r.tracks.items) || []) if (!vistos.has(x.uri) && bate(x.name, t)) { vistos.add(x.uri); op.push(x); } } catch (e) {}
-    if (op.length >= 15) break;
-  }
   const mm = d => { d = Math.round((d || 0) / 1000); return Math.floor(d / 60) + ':' + String(d % 60).padStart(2, '0'); };
-  app.modal(`Versão de "${s.title}"`, `<p style="color:var(--muted);margin:0 0 6px;font-size:.85rem">Toque na versão certa. A playlist do Spotify é atualizada e o link continua o mesmo.</p>
-    ${op.map((x, i) => `<button class="big" data-v="${i}" style="text-align:left"><span style="flex:1;min-width:0"><b>${escH(x.name)}</b><br><small style="color:var(--muted)">${escH(artistas(x))} · ${escH(x.album && x.album.name)} · ${mm(x.duration_ms)}</small></span>${s.sp && s.sp.uri === x.uri ? ' ✓' : ''}</button>`).join('') || '<p>Não achei versões com esse nome.</p>'}
+  let op = [];
+  const lista = () => op.map((x, i) => `<button class="big" data-v="${i}" style="text-align:left"><span style="flex:1;min-width:0"><b>${escH(x.name)}</b><br><small style="color:var(--muted)">${escH(artistas(x))} · ${escH(x.album && x.album.name)} · ${mm(x.duration_ms)}</small></span>${s.sp && s.sp.uri === x.uri ? ' ✓' : ''}</button>`).join('')
+    || '<p style="color:var(--muted)">Não achei. Tenta escrever de outro jeito (ex.: nome da música + banda).</p>';
+  app.modal(`Versão de "${s.title}"`, `<form id="spBusca" style="display:flex;gap:6px;margin:0 0 8px">
+      <input id="spQ" type="search" enterkeyhint="search" autocomplete="off" value="${escH((t + ' ' + a).trim())}" placeholder="Buscar no Spotify" style="flex:1;min-width:0;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:inherit">
+      <button class="mini" type="submit" style="padding:0 14px">Buscar</button></form>
+    <p style="color:var(--muted);margin:0 0 6px;font-size:.85rem">Escreva o que quiser (música, banda, "ao vivo", nome do show). Toque na versão certa: a playlist é atualizada e o link continua o mesmo.</p>
+    <div id="spRes"><p style="color:var(--muted)">Procurando…</p></div>
     ${s.sp ? '<button class="big" data-v="auto" style="color:var(--muted)">Voltar para a escolha automática <span>›</span></button>' : ''}`,
   e => { const b = e.target.closest('[data-v]'); if (!b) return;
     if (b.dataset.v === 'auto') delete s.sp; else { const x = op[+b.dataset.v]; s.sp = { uri: x.uri, nome: x.name, art: artistas(x) }; if (!s.dur && x.duration_ms) s.dur = Math.round(x.duration_ms / 1000); }
     app.save(); app.close(); create(p).then(() => {}); }, null, 'Cancelar');
+  const res = document.getElementById('spRes');
+  async function busca(qs, filtra) {
+    const vistos = new Set(); op = []; res.innerHTML = '<p style="color:var(--muted)">Procurando…</p>';
+    for (const q of qs) {
+      try { const r = await api('/search?' + new URLSearchParams({ q, type: 'track', limit: '10' }));
+        for (const x of (r && r.tracks && r.tracks.items) || []) if (!vistos.has(x.uri) && (!filtra || bate(x.name, t))) { vistos.add(x.uri); op.push(x); } } catch (e) {}
+      if (op.length >= 15) break;
+    }
+    if (document.getElementById('spRes') === res) res.innerHTML = lista();
+  }
+  document.getElementById('spBusca').addEventListener('submit', e => { e.preventDefault(); const q = document.getElementById('spQ').value.trim(); if (q) { document.getElementById('spQ').blur(); busca([q], false); } });
+  busca([a ? `track:${t} artist:${a}` : t, `${t} ${a}`.trim(), t, `${t} ao vivo`, `${t} live`], true);
 }
 
 let rodando = false;
