@@ -34,8 +34,15 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .lhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:12px;border-bottom:1px solid var(--line)}
 .lhead h1{font-size:1.4rem;margin:0 auto 0 0;letter-spacing:-.01em}
 .lhead h1 small{color:var(--muted);font-weight:400;font-size:.8rem;margin-left:6px}
-.tabs{display:flex;gap:6px;padding-block:10px}
-.tabs button{flex:1}
+.qrow{display:flex;gap:6px;padding-block:10px}
+.qrow input{margin:0;flex:1}
+.tabs{display:flex;gap:4px;border-top:1px solid var(--line);margin-inline:-14px;padding:6px 8px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));background:var(--bg)}
+.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;color:var(--muted);min-height:48px;padding:4px}
+.tabs button b{font-size:1.25rem;line-height:1;font-weight:400}
+.tabs button span{display:none}
+.tabs button.on{background:none;color:var(--accent);border:0}
+.spnote{color:var(--muted);font-size:.85rem;margin:0 0 8px;line-height:1.45}
+.list .sp{color:#1ed760;font-weight:700}
 #q{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .list{list-style:none;margin:0;padding:0;overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
 .list li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);background:var(--bg)}
@@ -205,13 +212,9 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
     <input type="file" id="file" multiple hidden><!-- sem "accept": o iPhone não conhece .onsong e deixava os arquivos cinza -->
     <button id="fileBtn">Importar cifras</button>
   </div>
-  <div class="tabs" role="tablist">
-    <button id="tBib" class="on" role="tab">Biblioteca <span id="nBib"></span></button>
-    <button id="tPls" role="tab">Playlists <span id="nPls"></span></button>
-  </div>
-  <div id="vBib">
-    <div style="display:flex;gap:6px;margin-bottom:8px"><input type="search" id="q" placeholder="Buscar música ou artista" aria-label="Buscar" style="margin:0;flex:1"><button class="mini" id="bibZero" hidden>Zerar tocadas</button></div>
-  </div>
+  <div class="qrow"><input type="search" id="q" placeholder="Buscar música ou artista" aria-label="Buscar"><button class="mini" id="bibZero" hidden>Zerar tocadas</button></div>
+  <div id="vBib"></div>
+  <div id="vSpo" hidden><p class="spnote" id="spNote"></p></div>
   <div id="vPls" hidden>
     <div class="row"><button class="primary" id="newPl">+ Nova playlist</button></div>
   </div>
@@ -226,6 +229,11 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
     </div>
   </div>
   <ul class="list" id="list"></ul>
+  <nav class="tabs" role="tablist">
+    <button id="tBib" class="on" role="tab"><b>♪</b>Biblioteca <span id="nBib"></span></button>
+    <button id="tPls" role="tab"><b>☰</b>Playlists <span id="nPls"></span></button>
+    <button id="tSpo" role="tab"><b>◉</b>Spotify <span id="nSpo"></span></button>
+  </nav>
 </section>
 
 <section id="stage" hidden>
@@ -403,7 +411,7 @@ function save(){store.set('songs',songs);store.set('playlists',pls);store.set('p
 window.calistoApp={state:()=>({songs,pls,prefs,ui}),
   apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x||x===n)return x||n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
     if(o.singers){ui.singers=o.singers;store.set('ui',ui)}if(curPl&&!plOf(curPl)){curPl=null;if(view==='pl')view='pls'}drawList()},
-  modal:(...a)=>modal(...a),close:()=>closeModal(),toast:m=>toast(m)};
+  modal:(...a)=>modal(...a),close:()=>closeModal(),toast:m=>toast(m),save:()=>save(),redraw:()=>drawList(),fmt:s=>fmtTotal(s)};
 // biblioteca convertida do backup do OnSong: músicas + playlists (com o tom de cada set). Não sobrescreve o que já existe.
 function importLib(o){const map={};let add=0,same=0,pa=0;
   for(const x of o.songs||[]){const ex=songs.find(s=>s.title.toLowerCase()===x.title.toLowerCase()&&s.artist.toLowerCase()===(x.artist||'').toLowerCase());
@@ -444,8 +452,12 @@ function totalDur(ids){const by=Object.fromEntries(songs.map(s=>[s.id,s]));let s
 function fmtTotal(sec){const m=Math.round(sec/60);return m>=60?`${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`:`${m} min`}
 function drawList(){
   $('nBib').textContent=songs.length?`(${songs.length})`:'';$('nPls').textContent=pls.length?`(${pls.length})`:'';
-  $('vBib').hidden=view!=='bib';$('vPls').hidden=view!=='pls';$('vPl').hidden=view!=='pl';
-  $('tBib').classList.toggle('on',view==='bib');$('tPls').classList.toggle('on',view!=='bib');
+  $('vBib').hidden=view!=='bib';$('vPls').hidden=view!=='pls';$('vPl').hidden=view!=='pl';$('vSpo').hidden=view!=='spo';
+  $('tBib').classList.toggle('on',view==='bib');$('tPls').classList.toggle('on',view==='pls'||view==='pl');$('tSpo').classList.toggle('on',view==='spo');
+  $('q').parentNode.hidden=view==='pl';$('q').placeholder=view==='bib'?'Buscar música ou artista':'Buscar playlist';
+  const nsp=pls.filter(p=>p.spotify&&p.spotify.url).length;$('nSpo').textContent=nsp?`(${nsp})`:'';
+  const qq=norm($('q').value.trim()),plMatch=p=>!qq||norm(p.name).includes(qq);
+  if(view!=='bib')$('bibZero').hidden=true;
   const by=Object.fromEntries(songs.map(s=>[s.id,s]));
   const tag=id=>isPlayed(id)?`<span class="badge" data-unplay="${id}" title="Tocada hoje. Toque para desmarcar">tocada</span>`:'';
   if(view==='bib'){
@@ -455,8 +467,13 @@ function drawList(){
     $('list').innerHTML=r.length?r.map(s=>{const n=pls.filter(p=>p.items.includes(s.id)).length;
       return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
       :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>Importar cifras</b> e escolha os arquivos .onsong (por exemplo, a pasta OnSong Casamento).'}</li>`;
+  }else if(view==='spo'){
+    const sp=window.calistoSpotify;const withL=pls.filter(p=>p.spotify&&p.spotify.url&&plMatch(p));
+    $('spNote').innerHTML=!sp?'O Spotify funciona na versão instalada do Calisto.':(sp.connected()?'Conectado ao Spotify. Para criar ou atualizar: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. <button class="mini" id="spOut">Desconectar</button>':'Para criar playlists no Spotify: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. Na primeira vez ele pede para entrar na sua conta do Spotify.');
+    $('list').innerHTML=withL.length?withL.map(p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${p.spotify.n||0} de ${p.items.length} no Spotify${p.spotify.miss&&p.spotify.miss.length?` · faltou ${p.spotify.miss.length}`:''}</div></div><a class="mini sp" href="${h(p.spotify.url)}" target="_blank" rel="noopener">Abrir</a><button class="mini" data-spshare="${p.id}">Link</button></li>`).join('')
+      :'<li class="empty">Nenhuma playlist no Spotify ainda.</li>';
   }else if(view==='pls'){
-    {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button><button class="swdel" data-del="pl:${p.id}">Apagar</button></li>`;const act=pls.filter(p=>!p.arch),arc=pls.filter(p=>p.arch);$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
+    {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button><button class="swdel" data-del="pl:${p.id}">Apagar</button></li>`;const act=pls.filter(p=>!p.arch&&plMatch(p)),arc=pls.filter(p=>p.arch&&plMatch(p));$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
       :'<li class="empty">Nenhuma playlist ainda. Toque em <b>+ Nova playlist</b>, dê um nome (por exemplo, "Casamento 20/11") e escolha as músicas no catálogo.</li>';}
   }else{
     const p=plOf(curPl);if(!p){view='pls';return drawList()}
@@ -470,7 +487,7 @@ function drawList(){
 function h(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
 $('q').addEventListener('input',drawList);
 $('bibZero').addEventListener('click',()=>{playedIds().splice(0);store.set('played',played);drawList();toast('Tocadas zeradas')});
-$('lib').addEventListener('click',e=>{if(e.target.id==='plZero'){const p=plOf(curPl);if(p){p.items.forEach(id=>setPlayed(id,false));drawList();toast('Tocadas zeradas')}}});
+$('lib').addEventListener('click',e=>{if(e.target.id==='spOut'&&window.calistoSpotify){calistoSpotify.disconnect();toast('Spotify desconectado neste aparelho');return}if(e.target.id==='plZero'){const p=plOf(curPl);if(p){p.items.forEach(id=>setPlayed(id,false));drawList();toast('Tocadas zeradas')}}});
 // arrastar a linha para a esquerda mostra o botão vermelho; tocar nele apaga
 let sw=null,swNoClick=0;
 $('list').addEventListener('pointerdown',e=>{const li=e.target.closest('li');if(!li||!li.querySelector('.swdel')||e.target.closest('.hd,.swdel'))return;sw={li,x:e.clientX,y:e.clientY,done:false}});
@@ -479,7 +496,8 @@ $('list').addEventListener('pointermove',e=>{if(!sw||sw.done)return;const dx=e.c
   else if(dx>40&&sw.li.classList.contains('sw')){sw.done=true;sw.li.classList.remove('sw');swNoClick=Date.now()}});
 addEventListener('pointerup',()=>{sw=null});
 function delSong(id){songs=songs.filter(s=>s.id!==id);pls.forEach(p=>{p.items=p.items.filter(x=>x!==id);if(p.tr)delete p.tr[id]});delete prefs[id];save();drawList()}
-$('list').addEventListener('click',e=>{const dl=e.target.closest('[data-del]');
+$('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]');if(sh){const p=plOf(sh.dataset.spshare);if(p&&p.spotify){const u=p.spotify.url;if(navigator.share&&!inFrame)navigator.share({title:p.name,url:u}).catch(()=>{});else navigator.clipboard.writeText(u).then(()=>toast('Link copiado'),()=>toast(u))}return}
+  const dl=e.target.closest('[data-del]');
   if(dl){e.stopPropagation();const[k,v]=dl.dataset.del.split(':');
     if(k==='song'){const s=songs.find(x=>x.id===v);delSong(v);toast(`"${s?s.title:'Música'}" apagada`)}
     else if(k==='pl'){const p=plOf(v);pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`)}
@@ -528,6 +546,7 @@ $('list').addEventListener('pointerup',endDrag);$('list').addEventListener('poin
 
 $('tBib').addEventListener('click',()=>{view='bib';drawList()});
 $('tPls').addEventListener('click',()=>{view='pls';drawList()});
+$('tSpo').addEventListener('click',()=>{view='spo';drawList()});
 $('newPl').addEventListener('click',()=>askName('Nova playlist','',name=>{const p={id:uid(),name,items:[]};pls.push(p);save();curPl=p.id;view='pl';drawList();pickSongs()}));
 $('plBack').addEventListener('click',()=>{view='pls';drawList()});
 $('plRen').addEventListener('click',()=>{const p=plOf(curPl);if(p)askName('Renomear playlist',p.name,name=>{p.name=name;save();drawList()})});
@@ -536,10 +555,11 @@ $('plAdd').addEventListener('click',()=>pickSongs());
 $('plSg').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
   pickSinger(`Tom de "${p.name}"`,p.singer||'',sg=>{p.singer=sg||undefined;save();drawList();toast(sg?`Ao tocar esta playlist, cada música abre no tom de ${sg}`:'Playlist no seu tom')},null,'Meu tom')});
 $('plMore').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
-  modal(p.name,`<button class="big" data-a="txt">Compartilhar o set em texto <span>›</span></button>${inFrame?'':'<button class="big" data-a="pdf">Gerar PDF do set <span>›</span></button>'}<button class="big" data-a="dup">Duplicar playlist <span>›</span></button>${p.arch?'<button class="big" data-a="arch">Desarquivar (volta para as ativas) <span>›</span></button>':'<button class="big" data-a="arch">Arquivar playlist <span>›</span></button>'}<button class="big" data-a="del" style="color:var(--danger)">Apagar playlist <span>›</span></button>`,
+  modal(p.name,`<button class="big" data-a="txt">Compartilhar o set em texto <span>›</span></button>${inFrame?'':'<button class="big" data-a="pdf">Gerar PDF do set <span>›</span></button>'}<button class="big" data-a="dup">Duplicar playlist <span>›</span></button>${window.calistoSpotify?`<button class="big" data-a="spot" style="color:#1ed760">${p.spotify?'Atualizar no Spotify':'Criar no Spotify'} <span>›</span></button>`:''}${p.arch?'<button class="big" data-a="arch">Desarquivar (volta para as ativas) <span>›</span></button>':'<button class="big" data-a="arch">Arquivar playlist <span>›</span></button>'}<button class="big" data-a="del" style="color:var(--danger)">Apagar playlist <span>›</span></button>`,
     e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
       if(k==='txt'){closeModal();shareText(p)}
       else if(k==='pdf'){closeModal();printSet(p)}
+      else if(k==='spot'){closeModal();window.calistoSpotify.create(p)}
       else if(k==='arch'){p.arch=!p.arch;if(!p.arch)delete p.arch;save();view='pls';closeModal();drawList();toast(p.arch?`"${p.name}" foi para as arquivadas`:`"${p.name}" voltou para as ativas`)}
       else if(k==='dup'){const c={id:uid(),name:p.name+' (cópia)',items:p.items.slice(),singer:p.singer,tr:Object.assign({},p.tr||{})};pls.splice(pls.indexOf(p)+1,0,c);save();curPl=c.id;closeModal();drawList();toast('Cópia criada. Renomeie se quiser')}
       else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
