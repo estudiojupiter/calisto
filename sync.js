@@ -25,6 +25,7 @@ btn.hidden = false;
 // ---------- estado local da sincronização ----------
 const KEY = 'calisto.sync';
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { return {}; } };
+if (window.calistoHealed) { try { localStorage.removeItem(KEY); } catch (e) {} } // o app consertou músicas quebradas: puxa tudo de novo da nuvem
 let st = load();
 const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
 function hash(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
@@ -97,11 +98,18 @@ async function pull() {
 async function push() {
   const S = app.state(), ops = [], ids = new Set();
   for (const s of S.songs) {
+    if (!s || !s.id || !s.title) continue; // nunca sobe música quebrada
     ids.add(s.id);
     const j = JSON.stringify(s), h = hash(j);
     if (st.h[s.id] !== h) ops.push({ id: s.id, data: { j, u: serverTimestamp() }, h });
   }
-  for (const id in st.h) if (!ids.has(id)) ops.push({ id, data: { del: true, u: serverTimestamp() }, h: null });
+  const gone = Object.keys(st.h).filter(id => !ids.has(id));
+  // trava de segurança: sumir muita música de uma vez é erro, não decisão; não apaga na nuvem e puxa tudo de novo
+  if (gone.length > 20 && gone.length > Object.keys(st.h).length * 0.1) {
+    console.warn('Calisto: ' + gone.length + ' músicas sumiram de uma vez; não apaguei na nuvem');
+    st = {}; keep(); throw new Error('muitas músicas sumiram');
+  }
+  for (const id of gone) ops.push({ id, data: { del: true, u: serverTimestamp() }, h: null });
   const mj = JSON.stringify(metaOf(S)), mh = hash(mj);
   const metaDirty = mh !== st.mh;
   if (!ops.length && !metaDirty) return 0;

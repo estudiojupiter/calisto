@@ -39,6 +39,11 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #q{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px}
 .list{list-style:none;margin:0;padding:0;overflow:auto;flex:1;-webkit-overflow-scrolling:touch}
 .list li{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line);background:var(--bg)}
+.list li{position:relative;overflow:hidden;touch-action:pan-y}
+.list li>*{transition:transform .18s ease}
+.list li.sw>*:not(.swdel){transform:translateX(-96px)}
+.swdel{position:absolute;right:0;top:0;bottom:0;width:90px;border:0;border-radius:0;background:var(--danger);color:#fff;font-weight:700;transform:translateX(100%)}
+.list li.sw .swdel{transform:none}
 .list li.dr{grid-template-columns:auto minmax(0,1fr) auto auto}
 .list .t{font-weight:600;overflow-wrap:anywhere}
 .list .a{color:var(--muted);font-size:.85rem}
@@ -61,12 +66,14 @@ body.dragging{user-select:none;-webkit-user-select:none}
 #stage{position:fixed;inset:0;background:var(--bg);overflow:hidden}
 .bar{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding-block:6px;padding-top:calc(6px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line);background:rgba(12,14,18,.94);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:transform .22s ease}
 .bar button{min-height:36px;padding:5px 10px}
+.bar .grp button{min-height:44px;min-width:44px;font-size:1.2rem;font-weight:700} /* ♭ ♯ − + maiores para o palco */
+.bar #kLab{font-size:.95rem;min-width:52px}
 .spdn{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums;min-width:1.4em;text-align:center}
 #stage.min .bar{transform:translateY(-105%)}
 #stage.min .foot{transform:translateY(130%)}
 .grab{position:absolute;left:50%;top:calc(6px + env(safe-area-inset-top,0px));width:38px;height:4px;margin-left:-19px;border-radius:4px;background:var(--line);opacity:0;transition:opacity .22s;z-index:5;pointer-events:none}
 #stage.min .grab{opacity:1}
-@media (max-width:560px){.desk{display:none!important}.bar{gap:5px;flex-wrap:nowrap;justify-content:space-between}.bar button{padding:5px 8px}}
+@media (max-width:560px){.desk{display:none!important}.bar{gap:5px;flex-wrap:nowrap;justify-content:space-between}.bar button{padding:5px 8px}.bar .grp button{min-width:42px;padding:4px 6px}}
 @media (min-width:561px){.mob{display:none!important}}
 .bar .grp{display:flex;gap:4px;align-items:center}
 #kLab{color:var(--chord);font-weight:800;width:5.2em;padding-inline:8px;line-height:1.05}
@@ -114,11 +121,12 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .chart.two{columns:2;column-gap:3em;column-rule:1px solid var(--line)}
 .chart.two>.s{break-after:avoid}
 /* rodapé do palco: fica abaixo da letra (nunca por cima) */
-.foot{position:absolute;right:0;bottom:0;z-index:6;display:flex;gap:8px;padding:8px;padding-right:max(10px,env(safe-area-inset-right,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));transition:transform .22s ease}
-.foot button{min-height:52px;min-width:0;max-width:40vw;display:flex;align-items:center;gap:8px;padding:6px 14px;border-radius:14px;font-weight:700;background:rgba(21,25,34,.92);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-@media (max-width:560px){.foot button{min-height:44px;padding:4px 10px}.foot button .nm{font-size:.72rem}}
-.foot button .ar{font-size:1.5rem;line-height:1}
-.foot button .nm{font-size:.85rem;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.foot{position:absolute;left:0;right:0;bottom:0;justify-content:space-between;padding-left:max(10px,env(safe-area-inset-left,0px));z-index:6;display:flex;gap:8px;padding:8px;padding-right:max(10px,env(safe-area-inset-right,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));transition:transform .22s ease}
+.foot button{min-height:64px;min-width:0;max-width:47vw;display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:16px;font-weight:700;background:rgba(21,25,34,.28);border-color:rgba(255,255,255,.14);text-shadow:0 1px 3px #000}
+#next{margin-left:auto}
+@media (max-width:560px){.foot button{min-height:60px;padding:4px 12px}.foot button .nm{font-size:.78rem}}
+.foot button .ar{font-size:2rem;line-height:1}
+.foot button .nm{font-size:.85rem;color:var(--ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .foot button:disabled{opacity:.35}
 /* contagem antes de rolar */
 #cd{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:32vmin;font-weight:800;color:var(--accent);pointer-events:none;z-index:15;text-shadow:0 0 30px rgba(0,0,0,.8)}
@@ -226,7 +234,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
     <span class="ttl desk" id="ttl"></span>
     <span class="pos desk" id="pos"></span>
     <div class="grp"><button id="tDn" aria-label="Meio tom abaixo">♭</button><button id="kLab" aria-label="Tom e artista"></button><button id="tUp" aria-label="Meio tom acima">♯</button></div>
-    <div class="grp spdg"><button id="sDn" aria-label="Mais devagar">−</button><span class="spdn" id="spd"></span><button id="sUp" aria-label="Mais rápido">+</button><button id="sc" aria-label="Rolagem automática">▶︎</button></div>
+    <div class="grp spdg"><button id="sDn" aria-label="Mais devagar">−</button><span class="spdn" id="spd"></span><button id="sUp" aria-label="Mais rápido">+</button><button id="sc" hidden aria-label="Rolagem automática">▶︎</button></div>
     <button id="edit" class="desk" aria-label="Editar cifra">✎ Editar</button>
     <div class="grp desk"><button id="fDn" aria-label="Diminuir letra">A−</button><button id="fUp" aria-label="Aumentar letra">A+</button></div>
     <button id="more" class="mob" aria-label="Mais opções">⋯</button>
@@ -265,7 +273,8 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 "use strict";
 const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem('palco.'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('palco.'+k,JSON.stringify(v))}catch(e){toast('Sem espaço para salvar no navegador')}}};
-let songs=store.get('songs',[]);           // {id,title,artist,key,capo,dur,text,orig?}
+let songs=store.get('songs',[]);
+{const seen=new Set(),ok=songs.filter(s=>s&&s.id&&s.title&&!seen.has(s.id)&&seen.add(s.id));if(ok.length!==songs.length){songs=ok;store.set('songs',songs);window.calistoHealed=true}} // conserto (18/11): músicas vazias de um erro da sincronização           // {id,title,artist,key,capo,dur,text,orig?}
 let pls=store.get('playlists',null);       // [{id,name,items:[id],singer?}]
 if(!pls){pls=[];const old=store.get('setlist',[]);if(old.length)pls.push({id:uid(),name:'Setlist',items:old})} // a setlist única antiga vira a 1ª playlist
 let prefs=store.get('prefs',{});           // {[id]:{tr (meu tom), v:{[cantora]:tr}, speed}}
@@ -392,7 +401,7 @@ function uid(){return Math.random().toString(36).slice(2,10)}
 function save(){store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui);if(window.calistoSync)calistoSync.changed()}
 // ponte para a sincronização (sync.js, só na versão oficial): ler o estado e aplicar o que veio da nuvem sem disparar save()
 window.calistoApp={state:()=>({songs,pls,prefs,ui}),
-  apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x)return n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
+  apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x||x===n)return x||n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
     if(o.singers){ui.singers=o.singers;store.set('ui',ui)}if(curPl&&!plOf(curPl)){curPl=null;if(view==='pl')view='pls'}drawList()},
   modal:(...a)=>modal(...a),close:()=>closeModal(),toast:m=>toast(m)};
 // biblioteca convertida do backup do OnSong: músicas + playlists (com o tom de cada set). Não sobrescreve o que já existe.
@@ -405,8 +414,14 @@ function importLib(o){const map={};let add=0,same=0,pa=0;
   for(const q of o.playlists||[]){if(pls.some(p=>p.name.trim().toLowerCase()===q.name.trim().toLowerCase()))continue;
     const items=q.items.map(r=>map[r]).filter(Boolean);const trm={};for(const r in q.tr||{})if(map[r])trm[map[r]]=q.tr[r];
     const nm=q.name.replace(/^📦\s*/,'');pls.push(Object.assign({id:uid(),name:nm,items,tr:trm},nm!==q.name?{arch:true}:{}));pa++}
+  let ajuste='';for(const op of o.ops||[]){if(op.type!=='artistKeys'||!op.artist)continue;const a=op.artist;if(!ui.singers.includes(a))ui.singers.push(a);let n=0;
+    for(const nm of op.playlists||[]){const p=pls.find(x=>x.name.trim().toLowerCase()===String(nm).trim().toLowerCase());if(!p)continue;
+      const fix=(op.tr||{})[nm];if(fix){p.tr=p.tr||{};for(const id of p.items){const so=songs.find(x=>x.id===id);const k=so&&(so.title+'|'+so.artist).toLowerCase();if(k&&fix[k]!=null)p.tr[id]=fix[k]}} // tons marcados vindos do arquivo
+      for(const id of p.items){prefs[id]=prefs[id]||{};prefs[id].v=prefs[id].v||{};const marcado=p.tr&&p.tr[id]!=null;if(!marcado&&prefs[id].v[a]!=null)continue; /* tom marcado na playlist vale mais que o tom padrão */prefs[id].v[a]=plTr(Object.assign({},p,{singer:''}),id);n++}p.singer=a}
+    ajuste+=` · ${n} tons salvos para ${a}`}
   songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();drawList();
-  toast(`Biblioteca: ${add} músicas novas${same?`, ${same} já existiam`:''} · ${pa} playlists`)}
+  if(!o.songs||!o.songs.length){toast(ajuste?ajuste.slice(3):'Nada para importar');return}
+  toast(`Biblioteca: ${add} músicas novas${same?`, ${same} já existiam`:''} · ${pa} playlists${ajuste}`)}
 async function importFiles(files){
   let add=0,upd=0;
   let skip=0;
@@ -438,18 +453,17 @@ function drawList(){
     const q=norm($('q').value.trim());
     const r=songs.filter(s=>!q||norm(s.title+' '+s.artist).includes(q));
     $('list').innerHTML=r.length?r.map(s=>{const n=pls.filter(p=>p.items.includes(s.id)).length;
-      return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button></li>`}).join('')
+      return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
       :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>Importar cifras</b> e escolha os arquivos .onsong (por exemplo, a pasta OnSong Casamento).'}</li>`;
   }else if(view==='pls'){
-    {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button></li>`;const act=pls.filter(p=>!p.arch),arc=pls.filter(p=>p.arch);$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
+    {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button><button class="swdel" data-del="pl:${p.id}">Apagar</button></li>`;const act=pls.filter(p=>!p.arch),arc=pls.filter(p=>p.arch);$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
       :'<li class="empty">Nenhuma playlist ainda. Toque em <b>+ Nova playlist</b>, dê um nome (por exemplo, "Casamento 20/11") e escolha as músicas no catálogo.</li>';}
   }else{
     const p=plOf(curPl);if(!p){view='pls';return drawList()}
-    p.items=p.items.filter(id=>by[id]);
     $('plName').textContent=p.name;$('plSgL').textContent=p.singer||'Artista';$('plSg').classList.toggle('on',!!p.singer);
     const td=totalDur(p.items);const np=p.items.filter(isPlayed).length;
     $('plMeta').innerHTML=p.items.length?`<span>${nMus(p.items.length)} · ≈ ${fmtTotal(td.sum)}${td.miss?` <span title="Músicas sem duração entram pela média">(${td.miss} sem duração)</span>`:''}</span>${np?`<span>· ${np} tocada${np>1?'s':''} hoje <button class="mini" id="plZero">Zerar</button></span>`:''}`:'';
-    $('list').innerHTML=p.items.length?p.items.map((id,i)=>{const s=by[id];return `<li class="dr${isPlayed(id)?' done':''}" data-id="${id}"><button class="hd" aria-label="Arrastar para mudar a ordem">⠿</button><div class="open" data-play="${i}"><div class="t">${i+1}. ${h(s.title)}${tag(id)}</div><div class="a">${h(s.artist)}${s.dur?' · '+mmss(s.dur):''}</div></div><span class="key">${h(ktPl(s,p))}</span><span style="display:flex;gap:4px"><button class="mini" data-up="${i}" aria-label="Subir">↑</button><button class="mini" data-rm="${i}" aria-label="Tirar da playlist">✕</button></span></li>`}).join('')
+    $('list').innerHTML=p.items.length?p.items.map((id,i)=>{const s=by[id];if(!s)return '';return `<li class="dr${isPlayed(id)?' done':''}" data-id="${id}"><button class="hd" aria-label="Arrastar para mudar a ordem">⠿</button><div class="open" data-play="${i}"><div class="t">${i+1}. ${h(s.title)}${tag(id)}</div><div class="a">${h(s.artist)}${s.dur?' · '+mmss(s.dur):''}</div></div><span class="key">${h(ktPl(s,p))}</span><span style="display:flex;gap:4px"><button class="mini" data-up="${i}" aria-label="Subir">↑</button></span><button class="swdel" data-del="item:${i}">Tirar</button></li>`}).join('')
       :'<li class="empty">Playlist vazia. Toque em <b>+ Músicas</b> e escolha no catálogo.</li>';
   }
 }
@@ -457,7 +471,23 @@ function h(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;'
 $('q').addEventListener('input',drawList);
 $('bibZero').addEventListener('click',()=>{playedIds().splice(0);store.set('played',played);drawList();toast('Tocadas zeradas')});
 $('lib').addEventListener('click',e=>{if(e.target.id==='plZero'){const p=plOf(curPl);if(p){p.items.forEach(id=>setPlayed(id,false));drawList();toast('Tocadas zeradas')}}});
-$('list').addEventListener('click',e=>{if(e.target.closest('[data-arch]')){ui.showArch=!ui.showArch;store.set('ui',ui);drawList();return}const t=e.target.closest('[data-unplay],[data-open],[data-addto],[data-pl],[data-plplay],[data-play],[data-up],[data-rm]');if(!t)return;const d=t.dataset;
+// arrastar a linha para a esquerda mostra o botão vermelho; tocar nele apaga
+let sw=null,swNoClick=0;
+$('list').addEventListener('pointerdown',e=>{const li=e.target.closest('li');if(!li||!li.querySelector('.swdel')||e.target.closest('.hd,.swdel'))return;sw={li,x:e.clientX,y:e.clientY,done:false}});
+$('list').addEventListener('pointermove',e=>{if(!sw||sw.done)return;const dx=e.clientX-sw.x,dy=e.clientY-sw.y;if(Math.abs(dy)>14&&Math.abs(dy)>Math.abs(dx)){sw=null;return}
+  if(dx<-40&&Math.abs(dx)>Math.abs(dy)*1.5){sw.done=true;$('list').querySelectorAll('li.sw').forEach(x=>x!==sw.li&&x.classList.remove('sw'));sw.li.classList.add('sw');swNoClick=Date.now()}
+  else if(dx>40&&sw.li.classList.contains('sw')){sw.done=true;sw.li.classList.remove('sw');swNoClick=Date.now()}});
+addEventListener('pointerup',()=>{sw=null});
+function delSong(id){songs=songs.filter(s=>s.id!==id);pls.forEach(p=>{p.items=p.items.filter(x=>x!==id);if(p.tr)delete p.tr[id]});delete prefs[id];save();drawList()}
+$('list').addEventListener('click',e=>{const dl=e.target.closest('[data-del]');
+  if(dl){e.stopPropagation();const[k,v]=dl.dataset.del.split(':');
+    if(k==='song'){const s=songs.find(x=>x.id===v);delSong(v);toast(`"${s?s.title:'Música'}" apagada`)}
+    else if(k==='pl'){const p=plOf(v);pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`)}
+    else if(k==='item'){const p=plOf(curPl);if(p){p.items.splice(+v,1);save();drawList();toast('Tirada da playlist (continua na biblioteca)')}}
+    return}
+  if(Date.now()-swNoClick<400)return;
+  const open1=$('list').querySelector('li.sw');if(open1){open1.classList.remove('sw');return} // toque fora fecha o botão
+  if(e.target.closest('[data-arch]')){ui.showArch=!ui.showArch;store.set('ui',ui);drawList();return}const t=e.target.closest('[data-unplay],[data-open],[data-addto],[data-pl],[data-plplay],[data-play],[data-up],[data-rm]');if(!t)return;const d=t.dataset;
   if(d.unplay){e.stopPropagation();setPlayed(d.unplay,false);drawList();toast('Desmarcada')}
   else if(d.addto)pickPlaylists(d.addto);
   else if(d.open){const ids=[...$('list').querySelectorAll('[data-open]')].map(x=>x.dataset.open);open(ids,ids.indexOf(d.open),'')} // abre na ordem da lista: dá para ir à próxima/anterior
@@ -515,7 +545,7 @@ $('plMore').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
       else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
 
 /* ---------- exportar o set ---------- */
-function setLines(p){const by=Object.fromEntries(songs.map(s=>[s.id,s]));return p.items.map((id,i)=>{const s=by[id];const k=trKey(s.key,plTr(p,id));return {n:i+1,t:s.title,a:s.artist,k,capo:s.capo,d:s.dur}})}
+function setLines(p){const by=Object.fromEntries(songs.map(s=>[s.id,s]));return p.items.filter(id=>by[id]).map((id,i)=>{const s=by[id];const k=trKey(s.key,plTr(p,id));return {n:i+1,t:s.title,a:s.artist,k,capo:s.capo,d:s.dur}})}
 function setText(p){const L=setLines(p);const td=totalDur(p.items);
   return `${p.name}${p.singer?' · '+p.singer:''}\n${nMus(L.length)} · ≈ ${fmtTotal(td.sum)}\n\n`+L.map(x=>`${x.n}. ${x.t}${x.a?' – '+x.a:''} (${x.k||'—'}${x.capo?', capo '+x.capo:''})`).join('\n')}
 async function shareText(p){const txt=setText(p);
