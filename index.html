@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0c0e12">
@@ -18,7 +18,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html,body{height:100%;margin:0}
+html,body{height:100%;margin:0;touch-action:manipulation} /* sem zoom de toque duplo */
 body{background:var(--bg);color:var(--ink);font-family:var(--f-ui);font-size:15px;-webkit-text-size-adjust:100%;
   padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 button,input,select{font:inherit;color:inherit}
@@ -269,6 +269,7 @@ let songs=store.get('songs',[]);           // {id,title,artist,key,capo,dur,text
 let pls=store.get('playlists',null);       // [{id,name,items:[id],singer?}]
 if(!pls){pls=[];const old=store.get('setlist',[]);if(old.length)pls.push({id:uid(),name:'Setlist',items:old})} // a setlist única antiga vira a 1ª playlist
 let prefs=store.get('prefs',{});           // {[id]:{tr (meu tom), v:{[cantora]:tr}, speed}}
+pls.forEach(p=>{if(/^📦\s*/.test(p.name)){p.name=p.name.replace(/^📦\s*/,'');p.arch=true}}); // vindas do backup com 📦 viram arquivadas
 let ui=store.get('ui',{font:22,speed:4});if(!ui.singers)ui.singers=[];
 if(!ui.seed1){ui.seed1=1;store.set('ui',ui)} // versão pública: artistas são cadastradas no próprio aparelho
 const first=n=>String(n||'').split(/\s+/)[0];
@@ -391,7 +392,7 @@ function uid(){return Math.random().toString(36).slice(2,10)}
 function save(){store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui);if(window.calistoSync)calistoSync.changed()}
 // ponte para a sincronização (sync.js, só na versão oficial): ler o estado e aplicar o que veio da nuvem sem disparar save()
 window.calistoApp={state:()=>({songs,pls,prefs,ui}),
-  apply(o){if(o.songs){songs=o.songs;songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
+  apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x)return n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
     if(o.singers){ui.singers=o.singers;store.set('ui',ui)}if(curPl&&!plOf(curPl)){curPl=null;if(view==='pl')view='pls'}drawList()},
   modal:(...a)=>modal(...a),close:()=>closeModal(),toast:m=>toast(m)};
 // biblioteca convertida do backup do OnSong: músicas + playlists (com o tom de cada set). Não sobrescreve o que já existe.
@@ -403,7 +404,7 @@ function importLib(o){const map={};let add=0,same=0,pa=0;
     if(x.tr){prefs[id]=prefs[id]||{};if(prefs[id].tr==null)prefs[id].tr=x.tr}}
   for(const q of o.playlists||[]){if(pls.some(p=>p.name.trim().toLowerCase()===q.name.trim().toLowerCase()))continue;
     const items=q.items.map(r=>map[r]).filter(Boolean);const trm={};for(const r in q.tr||{})if(map[r])trm[map[r]]=q.tr[r];
-    pls.push({id:uid(),name:q.name,items,tr:trm});pa++}
+    const nm=q.name.replace(/^📦\s*/,'');pls.push(Object.assign({id:uid(),name:nm,items,tr:trm},nm!==q.name?{arch:true}:{}));pa++}
   songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();drawList();
   toast(`Biblioteca: ${add} músicas novas${same?`, ${same} já existiam`:''} · ${pa} playlists`)}
 async function importFiles(files){
@@ -440,8 +441,8 @@ function drawList(){
       return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button></li>`}).join('')
       :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>Importar cifras</b> e escolha os arquivos .onsong (por exemplo, a pasta OnSong Casamento).'}</li>`;
   }else if(view==='pls'){
-    $('list').innerHTML=pls.length?pls.map(p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button></li>`).join('')
-      :'<li class="empty">Nenhuma playlist ainda. Toque em <b>+ Nova playlist</b>, dê um nome (por exemplo, "Casamento 20/11") e escolha as músicas no catálogo.</li>';
+    {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button></li>`;const act=pls.filter(p=>!p.arch),arc=pls.filter(p=>p.arch);$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
+      :'<li class="empty">Nenhuma playlist ainda. Toque em <b>+ Nova playlist</b>, dê um nome (por exemplo, "Casamento 20/11") e escolha as músicas no catálogo.</li>';}
   }else{
     const p=plOf(curPl);if(!p){view='pls';return drawList()}
     p.items=p.items.filter(id=>by[id]);
@@ -456,7 +457,7 @@ function h(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;'
 $('q').addEventListener('input',drawList);
 $('bibZero').addEventListener('click',()=>{playedIds().splice(0);store.set('played',played);drawList();toast('Tocadas zeradas')});
 $('lib').addEventListener('click',e=>{if(e.target.id==='plZero'){const p=plOf(curPl);if(p){p.items.forEach(id=>setPlayed(id,false));drawList();toast('Tocadas zeradas')}}});
-$('list').addEventListener('click',e=>{const t=e.target.closest('[data-unplay],[data-open],[data-addto],[data-pl],[data-plplay],[data-play],[data-up],[data-rm]');if(!t)return;const d=t.dataset;
+$('list').addEventListener('click',e=>{if(e.target.closest('[data-arch]')){ui.showArch=!ui.showArch;store.set('ui',ui);drawList();return}const t=e.target.closest('[data-unplay],[data-open],[data-addto],[data-pl],[data-plplay],[data-play],[data-up],[data-rm]');if(!t)return;const d=t.dataset;
   if(d.unplay){e.stopPropagation();setPlayed(d.unplay,false);drawList();toast('Desmarcada')}
   else if(d.addto)pickPlaylists(d.addto);
   else if(d.open){const ids=[...$('list').querySelectorAll('[data-open]')].map(x=>x.dataset.open);open(ids,ids.indexOf(d.open),'')} // abre na ordem da lista: dá para ir à próxima/anterior
@@ -505,10 +506,11 @@ $('plAdd').addEventListener('click',()=>pickSongs());
 $('plSg').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
   pickSinger(`Tom de "${p.name}"`,p.singer||'',sg=>{p.singer=sg||undefined;save();drawList();toast(sg?`Ao tocar esta playlist, cada música abre no tom de ${sg}`:'Playlist no seu tom')},null,'Meu tom')});
 $('plMore').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
-  modal(p.name,`<button class="big" data-a="txt">Compartilhar o set em texto <span>›</span></button>${inFrame?'':'<button class="big" data-a="pdf">Gerar PDF do set <span>›</span></button>'}<button class="big" data-a="dup">Duplicar playlist <span>›</span></button><button class="big" data-a="del" style="color:var(--danger)">Apagar playlist <span>›</span></button>`,
+  modal(p.name,`<button class="big" data-a="txt">Compartilhar o set em texto <span>›</span></button>${inFrame?'':'<button class="big" data-a="pdf">Gerar PDF do set <span>›</span></button>'}<button class="big" data-a="dup">Duplicar playlist <span>›</span></button>${p.arch?'<button class="big" data-a="arch">Desarquivar (volta para as ativas) <span>›</span></button>':'<button class="big" data-a="arch">Arquivar playlist <span>›</span></button>'}<button class="big" data-a="del" style="color:var(--danger)">Apagar playlist <span>›</span></button>`,
     e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
       if(k==='txt'){closeModal();shareText(p)}
       else if(k==='pdf'){closeModal();printSet(p)}
+      else if(k==='arch'){p.arch=!p.arch;if(!p.arch)delete p.arch;save();view='pls';closeModal();drawList();toast(p.arch?`"${p.name}" foi para as arquivadas`:`"${p.name}" voltou para as ativas`)}
       else if(k==='dup'){const c={id:uid(),name:p.name+' (cópia)',items:p.items.slice(),singer:p.singer,tr:Object.assign({},p.tr||{})};pls.splice(pls.indexOf(p)+1,0,c);save();curPl=c.id;closeModal();drawList();toast('Cópia criada. Renomeie se quiser')}
       else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
 
@@ -637,7 +639,7 @@ $('sheet').addEventListener('pointermove',e=>{if(!pt)return;const d=Math.hypot(e
 $('sheet').addEventListener('pointerup',e=>{if(!pt)return;clearTimeout(pt.timer);
   if(pt.dragging){const ni=+pt.note.dataset.note;const L=cur.text.split('\n');L[ni]=noteLine(pt.ndx,pt.ndy,noteParts(L[ni]).t);pt=null;commit(L);return}
   const ok=!pt.lp&&!pt.moved&&Date.now()-pt.t<500;const y=pt.y;pt=null;if(!ok)return;
-  const r=$('stage').getBoundingClientRect();if(y-r.top<r.height*.22)toggleChrome();else toggleScroll()}); // faixa de cima (22% da tela): mostra ou esconde os botões
+  const r=$('stage').getBoundingClientRect();if(y-r.top<r.height*.22)toggleChrome();else{const was=scrolling||cdTimer;toggleScroll();if(was)toggleChrome(false)}}); // pausou: mostra as barras com as setas // faixa de cima (22% da tela): mostra ou esconde os botões
 $('sheet').addEventListener('pointercancel',()=>{if(pt){clearTimeout(pt.timer);pt=null}});
 $('sheet').addEventListener('contextmenu',e=>{e.preventDefault();const el=e.target.closest('#chart [data-at]');if(el&&!(pt&&pt.lp)){if(pt){clearTimeout(pt.timer);pt=null}lineMenu(el)}}); // no Mac: botão direito abre o mesmo menu
 function commit(L){if(cur.orig==null)cur.orig=cur.text;cur.text=L.join('\n');if(cur.text===cur.orig)delete cur.orig;save();const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y}
@@ -710,7 +712,7 @@ $('eKb').addEventListener('click',()=>$('eX').blur()); // fecha o teclado para v
 function eSummary(){const k=$('eK').value.trim(),c=parseInt($('eC').value,10)||0;$('eSum').textContent=[$('eT').value.trim()||'Música',k?'Tom '+k:'',c?'Capo '+c:''].filter(Boolean).join(' · ')}
 ['eT','eK','eC'].forEach(id=>$(id).addEventListener('input',eSummary));
 $('eCancel').addEventListener('click',closeEditor);
-$('eSave').addEventListener('click',()=>{const x=$('eX').value;
+$('eSave').addEventListener('click',()=>{const x=$('eX').value;{const live=songs.find(s=>s.id===cur.id);if(live&&live!==cur){Object.assign(live,cur);cur=live}else if(!live)songs.push(cur)}
   if(cur.orig==null&&x!==cur.text)cur.orig=cur.text; // guarda a versão importada para poder restaurar
   cur.title=$('eT').value.trim()||cur.title;cur.artist=$('eA').value.trim();cur.key=$('eK').value.trim();cur.text=x;
   cur.capo=Math.max(0,Math.min(12,parseInt($('eC').value,10)||0));cur.dur=parseDur($('eD').value);

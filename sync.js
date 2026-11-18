@@ -57,6 +57,7 @@ async function pull() {
     const dirty = loc && st.h[id] !== undefined && hash(JSON.stringify(loc)) !== st.h[id];
     if (dirty) return; // mudou aqui e ainda não subiu: o aparelho ganha
     if (v.del) { if (loc) { songs = songs.filter(s => s.id !== id); byId.delete(id); changed = true; } delete st.h[id]; return; }
+    if (loc && JSON.stringify(loc) === v.j) { st.h[id] = hash(v.j); return; } // igual: não troca nada
     const song = JSON.parse(v.j);
     if (first && !loc) {
       const twin = byTA.get(kTA(song));
