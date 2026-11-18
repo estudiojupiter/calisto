@@ -3,7 +3,7 @@
 // Permissão pedida: só criar e editar playlists. Nada fica guardado além do acesso, neste aparelho.
 const CLIENT_ID = 'bd7c607d7ed24777b3485e2518eb13c2';
 const REDIRECT = location.origin + location.pathname.replace(/index\.html$/, '');
-const SCOPES = 'playlist-modify-private playlist-modify-public';
+const SCOPES = 'playlist-modify-private playlist-modify-public playlist-read-private'; // ler a playlist serve para respeitar as versões trocadas no Spotify
 const KEY = 'calisto.spotify', PEND = 'calisto.spotify.pend';
 const app = window.calistoApp;
 
@@ -25,7 +25,7 @@ async function tokenCall(body) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams(Object.assign({ client_id: CLIENT_ID }, body)) });
   if (!r.ok) throw new Error('token ' + r.status);
   const j = await r.json();
-  tok = { a: j.access_token, r: j.refresh_token || (tok && tok.r), exp: Date.now() + (j.expires_in - 60) * 1000 };
+  tok = { a: j.access_token, r: j.refresh_token || (tok && tok.r), s: j.scope || (tok && tok.s) || '', exp: Date.now() + (j.expires_in - 60) * 1000 };
   keep(tok); return tok;
 }
 async function access() {
@@ -70,6 +70,7 @@ function bate(a, b) { // o nome da faixa do Spotify confere com o da cifra?
   return B.filter(w => A.has(w)).length / Math.max(A.size, B.length) >= 0.6;
 }
 async function acha(s) {
+  if (s.sp && s.sp.uri) return { uri: s.sp.uri, duration_ms: 0, escolhida: true }; // versão que você escolheu no Spotify
   const t = limpa(s.title), a = String(s.artist || '').split(/[,/&]| e | feat\.? /i)[0].trim();
   const partes = t.includes('+') ? t.split('+').map(x => x.trim()).filter(Boolean) : [t]; // "Marcha Nupcial + No Fundo do Coração": tenta a 1ª parte
   const tentativas = [];
@@ -100,16 +101,39 @@ let rodando = false;
 async function create(p) {
   if (rodando) return; if (!p.items.length) { app.toast('Playlist vazia'); return; }
   if (!(await access())) { connect(p.id); return; }
+  if (p.spotify && p.spotify.id && !/playlist-read-private/.test(tok.s || '')) { connect(p.id); return; } // precisa da permissão nova uma vez
+  // aprende as trocas que você fez direto no Spotify (ex.: a versão ao vivo de um show)
+  let aprendeu = 0;
+  if (p.spotify && p.spotify.id && p.spotify.map && p.spotify.map.length) {
+    try {
+      const atual = []; let url = `/playlists/${p.spotify.id}/items?limit=100`;
+      for (let g = 0; url && g < 10; g++) {
+        let r; try { r = await api(url); } catch (e) { if (e.status === 404 && url.includes('/items')) { url = url.replace('/items', '/tracks'); r = await api(url); } else throw e; }
+        for (const x of (r && r.items) || []) { const t = x.track || x.item; if (t && t.uri) atual.push(t); }
+        url = r && r.next ? r.next.replace('https://api.spotify.com/v1', '') : null;
+      }
+      const naLista = new Set(atual.map(t => t.uri)), doMapa = new Set(p.spotify.map.map(m => m.uri));
+      const novas = atual.filter(t => !doMapa.has(t.uri));
+      const S0 = app.state(), by0 = Object.fromEntries(S0.songs.map(s => [s.id, s]));
+      for (const m of p.spotify.map) {
+        if (naLista.has(m.uri)) continue;
+        const s = by0[m.song]; if (!s) continue;
+        const k = novas.findIndex(t => bate(t.name, limpa(s.title).split('+')[0]));
+        if (k >= 0) { const t = novas.splice(k, 1)[0]; s.sp = { uri: t.uri, nome: t.name, art: (t.artists || []).map(a => a.name).join(', ') }; aprendeu++; }
+      }
+      if (aprendeu) app.save();
+    } catch (e) { console.warn('Calisto spotify: não deu para ler a playlist', e); }
+  }
   rodando = true;
   const S = app.state(), by = Object.fromEntries(S.songs.map(s => [s.id, s]));
-  const uris = [], miss = []; let durs = 0, i = 0;
+  const uris = [], miss = [], mapa = []; let durs = 0, i = 0;
   try {
     for (const id of p.items) {
       const s = by[id]; if (!s) continue;
       app.toast(`Procurando no Spotify… ${++i}/${p.items.length}`);
       const it = await acha(s);
       if (!it) { miss.push(s.title); continue; }
-      uris.push(it.uri);
+      uris.push(it.uri); mapa.push({ song: id, uri: it.uri });
       if (!s.dur && it.duration_ms) { s.dur = Math.round(it.duration_ms / 1000); durs++; }
     }
     if (!uris.length) { app.toast('Não achei nenhuma dessas músicas no Spotify.'); return; }
@@ -117,11 +141,11 @@ async function create(p) {
     if (p.spotify && p.spotify.id) { try { await api(`/playlists/${p.spotify.id}`, { method: 'PUT', body: JSON.stringify({ name: p.name }) }); pl = { id: p.spotify.id, external_urls: { spotify: p.spotify.url } }; } catch (e) { pl = null; } }
     if (!pl) pl = await novaPlaylist(p.name);
     await poeItens(pl.id, uris);
-    p.spotify = { id: pl.id, url: pl.external_urls.spotify, n: uris.length, miss, t: Date.now() };
+    p.spotify = { id: pl.id, url: pl.external_urls.spotify, n: uris.length, miss, map: mapa, t: Date.now() };
     app.save(); app.redraw();
     const esc = x => String(x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     app.modal('No Spotify ✓', `
-      <p style="margin:0 0 8px"><b>${esc(p.name)}</b>: ${uris.length} de ${p.items.length} músicas, na ordem do set.${durs ? ` Ganhei a duração de ${durs} música${durs > 1 ? 's' : ''}.` : ''}</p>
+      <p style="margin:0 0 8px"><b>${esc(p.name)}</b>: ${uris.length} de ${p.items.length} músicas, na ordem do set.${durs ? ` Ganhei a duração de ${durs} música${durs > 1 ? 's' : ''}.` : ''}${aprendeu ? ` Guardei ${aprendeu} versão${aprendeu > 1 ? 'ões' : ''} que você trocou no Spotify.` : ''}</p>
       ${miss.length ? `<p style="color:var(--muted);margin:0 0 10px">Não achei: ${miss.map(esc).join(', ')}.</p>` : ''}
       <a class="big" href="${esc(p.spotify.url)}" target="_blank" rel="noopener" style="display:flex;justify-content:space-between;text-decoration:none;color:#1ed760">Abrir no Spotify <span>›</span></a>
       <button class="big" data-a="share">Mandar o link <span>›</span></button>`,

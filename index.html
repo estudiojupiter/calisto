@@ -36,9 +36,9 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .lhead h1 small{color:var(--muted);font-weight:400;font-size:.8rem;margin-left:6px}
 .qrow{display:flex;gap:6px;padding-block:10px}
 .qrow input{margin:0;flex:1}
-.tabs{display:flex;gap:4px;border-top:1px solid var(--line);margin-inline:-14px;padding:6px 8px;padding-bottom:calc(6px + env(safe-area-inset-bottom,0px));background:var(--bg)}
-.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:.72rem;color:var(--muted);min-height:48px;padding:4px}
-.tabs button b{font-size:1.25rem;line-height:1;font-weight:400}
+.tabs{display:flex;gap:0;border-top:1px solid var(--line);margin-inline:-14px;padding:2px 8px 0;background:var(--bg)} /* o body já reserva a área do gesto do iPhone */
+.tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:.66rem;color:var(--muted);min-height:38px;padding:2px}
+.tabs button b{font-size:1.05rem;line-height:1;font-weight:400}
 .tabs button span{display:none}
 .tabs button.on{background:none;color:var(--accent);border:0}
 .spnote{color:var(--muted);font-size:.85rem;margin:0 0 8px;line-height:1.45}
@@ -87,7 +87,7 @@ body.dragging{user-select:none;-webkit-user-select:none}
 #kLab small{display:block;font-size:.62rem;font-weight:600;color:var(--muted);max-width:6em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bar .ttl{flex:1 1 140px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
 .bar .pos{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
-#sheet{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:64px;padding-bottom:60vh;font-family:var(--f-read)}
+#sheet{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-top:64px;padding-bottom:calc(88px + env(safe-area-inset-bottom,0px));font-family:var(--f-read)}
 #sheet .head h2{margin:0;font-size:1.6em;line-height:1.15}
 #sheet .head .art{color:var(--muted);margin:.15em 0 .3em}
 #sheet .head .meta{color:var(--chord);font-size:.8em;font-weight:600;margin-bottom:.8em}
