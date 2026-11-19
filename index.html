@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0c0e12">
 <title>Calisto</title>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=panchang@500,700&display=swap"><!-- letra da marca (Panchang, Fontshare, uso livre); o app guarda uma cópia para funcionar sem internet -->
 <style>
 /* Calisto (antes "Palco") v0 · protótipo do app próprio (15/11/2026). Tema escuro fixo: pensado para palco. */
 :root{
@@ -32,7 +33,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 /* Biblioteca */
 #lib{display:flex;flex-direction:column;height:100%}
 .lhead{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-block:12px;border-bottom:1px solid var(--line)}
-.lhead h1{font-size:1.4rem;margin:0 auto 0 0;letter-spacing:-.01em}
+.lhead h1{font-family:'Panchang',var(--f-ui);font-weight:500;font-size:1.25rem;margin:0 auto 0 0;letter-spacing:.01em}
+.brand{font-family:'Panchang',var(--f-ui);font-weight:500;letter-spacing:.01em}
 .lhead h1 small{color:var(--muted);font-weight:400;font-size:.8rem;margin-left:6px}
 .qrow{display:flex;gap:6px;padding-block:10px}
 .qrow input{margin:0;flex:1}
@@ -296,7 +298,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 
 <section id="lib" class="wrapx">
   <div class="lhead">
-    <h1>Calisto <small>v1</small></h1>
+    <h1>calisto</h1>
     <button id="helpBtn" class="mini" aria-label="Tutorial do Calisto" title="Tutorial">?</button>
     <button id="cloudBtn" class="mini" hidden>☁︎ Entrar</button>
     <input type="file" id="file" multiple hidden><!-- sem "accept": o iPhone não conhece .onsong e deixava os arquivos cinza -->
@@ -1104,23 +1106,23 @@ const toLib=v=>{if(!$('editor').hidden)closeEditor();if(!$('stage').hidden)$('ba
 const toStage=()=>{const s=firstSong();if(!s)return false;if($('stage').hidden){ui.tip1=1;open([s.id],0,'')}return true};
 const mob=()=>innerWidth<=560;
 const STEPS=[
- {t:'Vamos fazer um tour',x:'Vou abrir as telas de verdade e apontar onde fica cada coisa. Use <b>Próximo</b> e <b>Voltar</b>; dá para sair quando quiser.',go:()=>toLib('bib')},
- {el:'#tBib',t:'Biblioteca',x:'Aqui ficam todas as suas músicas. As abas de baixo levam às outras partes do app.',go:()=>toLib('bib')},
+ {t:'Bem-vindo ao calisto',x:'Tudo que gira em torno da sua música. Vou abrir as telas de verdade e apontar onde fica cada coisa. Use <b>Próximo</b> e <b>Voltar</b>; dá para sair quando quiser.',go:()=>toLib('bib'),brand:1},
+ {el:'#tBib',t:'Biblioteca',x:'Todas as suas músicas. As abas de baixo levam às outras partes: Playlists, Spotify, Composição e Afinador.',go:()=>toLib('bib')},
  {el:'.qrow',t:'Busca e total',x:'Procure por nome da música ou do artista. Ao lado aparece quantas músicas você tem.',go:()=>toLib('bib')},
- {el:'#list li:not(.empty)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar (e use <b>Desfazer</b> se errar).',go:()=>toLib('bib')},
+ {el:'#list li:not(.empty)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar; se errar, toque em <b>Desfazer</b> no aviso de baixo.',go:()=>toLib('bib')},
  {el:'#fileBtn',t:'Adicionar músicas',x:'Cole uma cifra copiada de qualquer site (Cifra Club, Cifras, Ultimate Guitar), escreva do zero ou importe arquivos do OnSong.',go:()=>toLib('bib')},
- {el:'#newPl',t:'Playlists',x:'Um set para cada show. Crie aqui e escolha as músicas no catálogo.',go:()=>toLib('pls')},
- {el:'#list li:not(.empty)',t:'Dentro de uma playlist',x:'Abra e toque numa música para começar o show dali. Dentro dela: <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b>: arquivar, PDF e Spotify.',go:()=>toLib('pls')},
- {el:'#sheet',t:'No palco',x:'Encoste na letra para começar ou pausar a rolagem. Segure numa linha para criar uma nota ou um marca-texto.',go:toStage,need:firstSong},
+ {el:'#newPl',t:'Playlists',x:'Um set para cada show. A playlist que você mexe sobe para o topo; as antigas dá para arquivar.',go:()=>toLib('pls')},
+ {el:'#list li:not(.empty)',t:'Dentro de uma playlist',x:'Toque numa música para começar o show dali. Lá dentro: <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b> (PDF, arquivar, Spotify).',go:()=>toLib('pls')},
+ {el:'#sheet',t:'No palco',x:'Encoste na letra para começar ou pausar a rolagem. Segure numa linha para criar uma nota ou um marca-texto. No iPad deitado e no computador, a cifra abre em duas colunas.',go:toStage,need:firstSong},
  {el:'#tDn',el2:'#tUp',t:'Tom',x:'<b>♭</b> e <b>♯</b> mudam o tom meio em meio. Toque no tom do meio para escolher a artista ou voltar ao original.',go:toStage,need:firstSong},
- {el:'.spdg',t:'Velocidade',x:'<b>−</b> e <b>+</b> ajustam a velocidade da rolagem.',go:toStage,need:firstSong},
+ {el:'.spdg',t:'Velocidade',x:'<b>−</b> e <b>+</b> ajustam a velocidade da rolagem. Cada música lembra a sua.',go:toStage,need:firstSong},
  {el:()=>mob()?'#more':'#edit',t:'Editar e mais',x:'Corrija a cifra na hora. No celular, o <b>⋯</b> também tem tamanho da letra, afinador e <b>Tirar desta playlist</b>.',go:toStage,need:firstSong},
- {el:'#foot',t:'Próxima música',x:'As setas de baixo passam para a música anterior ou a próxima do set, com o nome de cada uma.',go:toStage,need:firstSong},
- {el:'#recIdea',t:'Composição',x:'<b>Gravar agora</b> registra uma melodia na hora, sem procurar no gravador do celular.',go:()=>toLib('comp')},
- {el:'#newIdea',t:'Nova ideia',x:'Abre a tela de escrita com o gravador em cima e o <b>Ditar letra</b>: o texto aparece enquanto você fala, e cada pausa vira uma linha.',go:()=>toLib('comp')},
- {el:'#tTun',t:'Afinador, metrônomo e diapasão',x:'Três ferramentas na mesma aba. O metrônomo continua tocando quando você volta para a cifra.',go:()=>toLib('bib')},
- {el:'#tSpo',t:'Spotify',x:'Mande qualquer playlist para o Spotify e escolha a versão de cada música, sem mudar o link.',go:()=>toLib('spo')},
- {el:'#cloudBtn',t:'Sua conta',x:'Entre para guardar tudo na nuvem e usar no celular, no iPad e no computador.',go:()=>toLib('bib'),need:()=>!$('cloudBtn').hidden},
+ {el:'#foot',t:'Próxima música',x:'As setas de baixo passam para a anterior ou a próxima do set, com o nome de cada uma.',go:toStage,need:firstSong},
+ {el:'#recIdea',t:'Composição',x:'<b>Gravar agora</b> registra uma melodia na hora, sem procurar no gravador do celular. Os áudios ficam guardados neste aparelho.',go:()=>toLib('comp')},
+ {el:'#newIdea',t:'Nova ideia',x:'Tela de escrita com gravador e <b>Ditar letra</b> (o texto aparece enquanto você fala). Com o teclado aberto, as setas andam com o cursor. Quando a música ficar pronta, use <b>✓ Finalizar</b> na lista para mandar para a Biblioteca.',go:()=>toLib('comp')},
+ {el:'#tTun',t:'Afinador, metrônomo e diapasão',x:'Três ferramentas na mesma aba. O metrônomo continua tocando na cifra: um toque na bolinha pausa, dois toques desligam.',go:()=>toLib('bib')},
+ {el:'#tSpo',t:'Spotify',x:'Mande qualquer playlist para o Spotify, sem mudar o link. Em <b>Conferir</b>, troque a versão de cada música, para todas as playlists ou só para uma. Composições suas não ganham faixa inventada.',go:()=>toLib('spo')},
+ {el:'#cloudBtn',t:'Sua conta',x:'Entre para guardar tudo na nuvem. O que você muda no computador aparece no celular em segundos, e vice-versa.',go:()=>toLib('bib'),need:()=>!$('cloudBtn').hidden},
  {el:'#helpBtn',t:'Pronto!',x:'Este tour fica aqui no <b>?</b>, para quando quiser rever.',go:()=>toLib('bib'),end:1}];
 let cI=0,cList=[];
 const pick=sel=>{sel=typeof sel==='function'?sel():sel;if(!sel)return null;const el=document.querySelector(sel);if(!el)return null;const r=el.getBoundingClientRect();return r.width&&r.height?r:null};
@@ -1140,7 +1142,7 @@ let cTok=0;
 async function cShow(i){const tok=++cTok;cI=Math.max(0,Math.min(cList.length-1,i));const st=cList[cI];coach.classList.add('busy');
   try{if(st.go)await st.go()}catch(e){}await wait(260);if(tok!==cTok)return;
   const e1=typeof st.el==='function'?st.el():st.el;const el=e1&&document.querySelector(e1);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});await wait(60);if(tok!==cTok)return;
-  $('cTtl').textContent=st.t;$('cTxt').innerHTML=st.x;$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
+  $('cTtl').textContent=st.t;$('cTtl').classList.toggle('brand',!!st.brand);$('cTxt').innerHTML=st.x;$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
   $('cPrev').hidden=!cI;$('cNext').textContent=cI===cList.length-1?'Começar a usar':'Próximo';coach.classList.remove('busy');cPlace();setTimeout(()=>{if(tok===cTok)cPlace()},320)}
 function tour(){stopScroll();cList=STEPS.filter(s=>!s.need||s.need());coach.hidden=false;cShow(0)}
 function tourEnd(){cTok++;coach.hidden=true;coach.classList.remove('busy');toLib('bib')}
@@ -1149,8 +1151,8 @@ $('cPrev').addEventListener('click',()=>{if(coach.classList.contains('busy'))ret
 addEventListener('resize',()=>{if(!coach.hidden)cPlace()});
 document.addEventListener('keydown',e=>{if(coach.hidden)return;e.stopPropagation();if(e.key==='ArrowRight'||e.key==='Enter'){e.preventDefault();$('cNext').click()}else if(e.key==='ArrowLeft')$('cPrev').click();else if(e.key==='Escape')tourEnd()},true);
 $('helpBtn').addEventListener('click',()=>tour());
-if(!ui.tour1){ui.tour1=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidden||!$('editor').hidden)return;
-  modal('Primeira vez no Calisto?','<p style="margin:0 0 12px;color:var(--muted)">Um tour de 1 minuto abre as telas e mostra onde fica cada coisa. Ele fica guardado no <b>?</b> do topo, para quando quiser.</p><button class="primary" data-t="go" style="width:100%;min-height:48px">Fazer o tour</button>',
+if(!ui.tour2){const volta=!!ui.tour1;ui.tour1=ui.tour2=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidden||!$('editor').hidden)return;
+  modal(volta?'Tour novo do calisto':'Primeira vez no calisto?','<p style="margin:0 0 12px;color:var(--muted)">Um tour de 1 minuto abre as telas e mostra onde fica cada coisa. Ele fica guardado no <b>?</b> do topo, para quando quiser.</p><button class="primary" data-t="go" style="width:100%;min-height:48px">Fazer o tour</button>',
   e=>{if(e.target.closest('[data-t]')){closeModal();tour()}},null,'Agora não')},1500)}
 /* ---------- desfazer: guarda uma foto do catálogo antes das ações que mudam coisas (até 10) ---------- */
 const undoSt=[];
