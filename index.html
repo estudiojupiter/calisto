@@ -294,7 +294,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
     <button id="helpBtn" class="mini" aria-label="Tutorial do Calisto" title="Tutorial">?</button>
     <button id="cloudBtn" class="mini" hidden>☁︎ Entrar</button>
     <input type="file" id="file" multiple hidden><!-- sem "accept": o iPhone não conhece .onsong e deixava os arquivos cinza -->
-    <button id="fileBtn">Importar cifras</button>
+    <button id="fileBtn" class="primary">+ Música</button>
   </div>
   <div class="qrow"><input type="search" id="q" placeholder="Buscar música ou artista" aria-label="Buscar"><button class="mini" id="bibZero" hidden>Zerar tocadas</button><span id="bibN" class="bibn" hidden></span></div>
   <div id="vBib"></div>
@@ -549,7 +549,37 @@ async function importFiles(files){
     if(ex){if(!p.dur&&ex.dur)p.dur=ex.dur;Object.assign(ex,p);delete ex.orig;upd++}else{songs.push(Object.assign({id:uid()},p));add++}}
   if(!add&&!upd&&!skip)return;songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();drawList();toast(`${add} novas${upd?`, ${upd} atualizadas`:''}${skip?` · ${skip} ignorado${skip>1?'s':''} (não é cifra)`:''}`);
 }
-$('fileBtn').addEventListener('click',()=>$('file').click());
+// adicionar música: colar de qualquer site de cifras, escrever do zero ou importar arquivos
+function cleanPaste(raw){let L=raw.replace(/\r\n?/g,'\n').replace(/ /g,' ').replace(/\t/g,'    ').split('\n');const out=[];let key='',capo='';
+  const junk=/^\s*(cifra club|cifraclub|composi[çc][ãa]o de|colabora[çc][ãa]o e revis[ãa]o|exibir|afina[çc][ãa]o\b|tablatura|v[íi]deo ?aula|rolagem|imprimir|coment[áa]rios|autoplay|ver mais|ocultar|simplificar cifra|adicionar [àa] lista|baixar|escolha o tom|letra e tradu|cifras\.com|ultimate guitar|tabs? by|print|transpose|font size)\b/i;
+  for(let l of L){const t=l.trim();
+    let m=t.match(/^tom\s*:\s*([A-G][#b]?m?)/i);if(m){key=key||m[1];continue}
+    m=t.match(/^(capo(?:traste)?)\s*(?:na|on|:)?\s*(\d+)/i);if(m){capo=m[2];continue}
+    if(junk.test(t))continue;
+    m=t.match(/^\[([^\]]{1,30})\]\s*(.*)$/);if(m&&!isChord(m[1].trim())){out.push(m[1].trim()+':');if(m[2].trim())out.push(m[2]);continue} /* [Refrão] D G  →  Refrão:  /  D G */
+    out.push(l.replace(/\s+$/,''))}
+  while(out.length&&!out[0].trim())out.shift();
+  const meta=(key?`Key: ${key}\n`:'')+(capo?`Capo: ${capo}\n`:'');
+  /* título e artista: as duas primeiras linhas, se não forem acorde nem parte */
+  const hd=[];let k=0;while(k<out.length&&hd.length<2){const t=out[k].trim();if(!t){if(hd.length)break;k++;continue}if(isChordLine(t)||isHeader(t)||isTab(t))break;if(t.length>60)break;hd.push(t);k++}
+  const body=out.slice(k).join('\n').replace(/\n{3,}/g,'\n\n');
+  return {head:hd,text:`Title: ${hd[0]||'Nova música'}\n`+(hd[1]?`Artist: ${hd[1]}\n`:'')+meta+'\n'+body};}
+function newSongFrom(p){const s=Object.assign({id:uid(),fresh:true},p);songs.push(s);songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();drawList();ui.tip1=1;open([s.id],0,'');setTimeout(()=>$('edit').click(),60)}
+function addMenu(){modal('Adicionar música',`<button class="big" data-a="paste"><span>📋 Colar uma cifra<br><small style="color:var(--muted)">de qualquer site ou app: Cifra Club, Cifras, Ultimate Guitar…</small></span><span>›</span></button>
+  <button class="big" data-a="new"><span>✎ Escrever do zero</span><span>›</span></button>
+  <button class="big" data-a="file"><span>📁 Importar arquivos<br><small style="color:var(--muted)">OnSong, .txt, ChordPro ou o backup do Calisto</small></span><span>›</span></button>`,
+  e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
+    if(k==='file'){closeModal();$('file').click()}
+    else if(k==='new'){closeModal();newSongFrom({title:'Nova música',artist:'',key:'',text:''})}
+    else if(k==='paste')pasteBox()},null,'Fechar')}
+function pasteBox(){modal('Colar uma cifra',`<p class="spnote">No site ou app de cifras, copie a cifra inteira (com o nome e o artista, se der) e cole aqui. Eu separo o título, o artista, o tom e as partes; depois você confere no editor.</p>
+  <textarea class="f" id="pasteX" rows="10" wrap="off" spellcheck="false" autocapitalize="off" placeholder="Cole aqui" style="font-family:var(--f-mono);font-size:14px;white-space:pre;min-height:40vh"></textarea>
+  <p class="spnote" id="pasteInfo" style="margin-top:6px"></p><div class="row"><button class="primary" data-a="ok" style="flex:1;min-height:46px">Criar música</button></div>`,
+  e=>{if(!e.target.closest('[data-a="ok"]'))return;const raw=$('pasteX').value;if(!raw.trim()){toast('Cole uma cifra primeiro');return}
+    const c=cleanPaste(raw),p=parse(c.text,'');if(!c.head[0])p.title='Nova música';closeModal();newSongFrom(p);toast('Confira o nome, o artista e o tom em "Dados da música" e salve.')},null,'Cancelar');
+  const x=$('pasteX'),info=()=>{const c=cleanPaste(x.value);if(!x.value.trim()){$('pasteInfo').textContent='';return}const p=parse(c.text,'');$('pasteInfo').textContent=`${c.head[0]?`“${p.title}”${p.artist?' · '+p.artist:''}`:'Sem título (você dá o nome no editor)'}${p.key?' · tom '+p.key:''}`};
+  x.addEventListener('input',info);x.addEventListener('paste',()=>setTimeout(info,0));setTimeout(()=>x.focus(),50)}
+$('fileBtn').addEventListener('click',addMenu);
 $('file').addEventListener('change',e=>{importFiles([...e.target.files]);e.target.value=''});
 
 let view='bib',curPl=null;
@@ -576,7 +606,7 @@ function drawList(){
     $('bibN').hidden=!LIB.length;$('bibN').textContent=q?`${r.length} de ${LIB.length}`:`${LIB.length} músicas`;
     $('list').innerHTML=r.length?r.map(s=>{const n=pls.filter(p=>p.items.includes(s.id)).length;
       return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
-      :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>Importar cifras</b> e escolha os arquivos .onsong (por exemplo, a pasta OnSong Casamento).'}</li>`;
+      :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>+ Música</b>: dá para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong.'}</li>`;
   }else if(view==='comp'){
     const r=songs.filter(s=>s.comp&&(!qq||norm(s.title+' '+(s.text||'')).includes(qq))).sort((a,b)=>(b.mt||0)-(a.mt||0));
     const dt=t=>t?new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
@@ -716,7 +746,7 @@ function pickSinger(title,current,onPick,keyOf,noneLabel,withOrig,plName){
 function pickSongs(){const p=plOf(curPl);if(!p)return;
   const draw=()=>{const q=norm($('pkQ').value.trim());const r=songs.filter(s=>!s.comp&&(!q||norm(s.title+' '+s.artist).includes(q)));
     $('pkL').innerHTML=r.length?r.map(s=>{const on=p.items.includes(s.id);return `<li><div class="open" data-tg="${s.id}"><div class="t">${h(s.title)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,p.singer))}</span><button class="mini${on?' on':''}" data-tg="${s.id}" aria-label="${on?'Tirar':'Adicionar'}">${on?'✓':'+'}</button></li>`}).join('')
-      :`<li class="empty">${songs.length?'Nada com essa busca.':'O catálogo está vazio: importe as cifras primeiro.'}</li>`;
+      :`<li class="empty">${songs.length?'Nada com essa busca.':'O catálogo está vazio: adicione músicas em <b>+ Música</b> na Biblioteca.'}</li>`;
     $('pkN').textContent=`${nMus(p.items.length)} na playlist`};
   modal(`Adicionar a "${p.name}"`,`<input type="search" id="pkQ" class="f" placeholder="Buscar no catálogo" aria-label="Buscar no catálogo"><div id="pkN" style="margin:6px 0;color:var(--muted);font-size:.85rem"></div><ul class="list" id="pkL"></ul>`,
     e=>{const t=e.target.closest('[data-tg]');if(!t)return;const id=t.dataset.tg;const i=p.items.indexOf(id);if(i>=0)p.items.splice(i,1);else p.items.push(id);save();draw()},
@@ -870,7 +900,7 @@ $('eCh').addEventListener('pointerdown',e=>{if(e.target.closest('[data-ch]'))e.p
 $('eCh').addEventListener('mousedown',e=>e.preventDefault());
 $('eCh').addEventListener('click',e=>{const b=e.target.closest('[data-ch]');if(!b)return;const ta=$('eX');const a=ta.selectionStart??ta.value.length,z=ta.selectionEnd??a;ta.focus();ta.setRangeText(b.dataset.ch,a,z,'end')});
 let chT;$('eK').addEventListener('input',drawChords);$('eX').addEventListener('input',()=>{clearTimeout(chT);chT=setTimeout(drawChords,600)});
-function closeEditor(){const wasRec=!!rec;recStop();dictStop();if(edFrom==='comp'){const s=cur;if(s&&s.comp&&!wasRec&&!s.text&&!(s.recs&&s.recs.length)){songs=songs.filter(x=>x!==s);save()}edFrom='';setTimeout(drawList,0)}$('editor').hidden=true;const ed=$('editor');ed.style.top=ed.style.height=ed.style.bottom='';ed.classList.remove('kb')}
+function closeEditor(){const wasRec=!!rec;recStop();dictStop();if(cur&&cur.fresh&&edFrom!=='comp'){const s=cur;if(!s.text||!s.text.trim()){songs=songs.filter(x=>x!==s);save();setTimeout(()=>{if(!$('stage').hidden)$('back').click()},0)}}if(edFrom==='comp'){const s=cur;if(s&&s.comp&&!wasRec&&!s.text&&!(s.recs&&s.recs.length)){songs=songs.filter(x=>x!==s);save()}edFrom='';setTimeout(drawList,0)}$('editor').hidden=true;const ed=$('editor');ed.style.top=ed.style.height=ed.style.bottom='';ed.classList.remove('kb')}
 // o editor acompanha a área visível: com o teclado aberto, a fileira de acordes fica colada em cima dele
 function fitEditor(){const ed=$('editor'),vv=window.visualViewport;if(ed.hidden||!vv)return;
   ed.style.top=vv.offsetTop+'px';ed.style.height=vv.height+'px';ed.style.bottom='auto';ed.classList.toggle('kb',window.innerHeight-vv.height>120)}
@@ -892,7 +922,7 @@ $('eSave').addEventListener('click',()=>{const fromComp=edFrom==='comp';snap(fro
   cur.title=$('eT').value.trim()||cur.title;cur.artist=$('eA').value.trim();cur.key=$('eK').value.trim();cur.text=x;
   cur.capo=Math.max(0,Math.min(12,parseInt($('eC').value,10)||0));cur.dur=parseDur($('eD').value);
   if(cur.orig!=null&&x===cur.orig)delete cur.orig;
-  if(fromComp)cur.mt=Date.now();save();closeEditor();if(fromComp){drawList();toast('Ideia salva',1);return}const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
+  if(fromComp)cur.mt=Date.now();delete cur.fresh;save();closeEditor();if(fromComp){drawList();toast('Ideia salva',1);return}const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
 let origArm=0;$('eOrig').addEventListener('click',()=>{if(Date.now()-origArm<3000){$('eX').value=cur.orig;toast('Texto original de volta. Toque em Salvar para confirmar')}else{origArm=Date.now();toast('Toque de novo para restaurar')}});
 // teclado do computador: ← → trocam de música, Esc volta à lista
 document.addEventListener('keydown',e=>{if($('stage').hidden||!$('editor').hidden||!$('modal').hidden||/INPUT|TEXTAREA/.test(e.target.tagName))return;
@@ -1055,7 +1085,7 @@ const STEPS=[
  {el:'#tBib',t:'Biblioteca',x:'Aqui ficam todas as suas músicas. As abas de baixo levam às outras partes do app.',go:()=>toLib('bib')},
  {el:'.qrow',t:'Busca e total',x:'Procure por nome da música ou do artista. Ao lado aparece quantas músicas você tem.',go:()=>toLib('bib')},
  {el:'#list li:not(.empty)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar (e use <b>Desfazer</b> se errar).',go:()=>toLib('bib')},
- {el:'#fileBtn',t:'Importar cifras',x:'Traga os arquivos do OnSong (ou o backup do Calisto) por aqui.',go:()=>toLib('bib')},
+ {el:'#fileBtn',t:'Adicionar músicas',x:'Cole uma cifra copiada de qualquer site (Cifra Club, Cifras, Ultimate Guitar), escreva do zero ou importe arquivos do OnSong.',go:()=>toLib('bib')},
  {el:'#newPl',t:'Playlists',x:'Um set para cada show. Crie aqui e escolha as músicas no catálogo.',go:()=>toLib('pls')},
  {el:'#list li:not(.empty)',t:'Dentro de uma playlist',x:'Abra para ver <b>▶ Tocar</b>, <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b>: arquivar, PDF e Spotify.',go:()=>toLib('pls')},
  {el:'#sheet',t:'No palco',x:'Encoste na letra para começar ou pausar a rolagem. Segure numa linha para criar uma nota ou um marca-texto.',go:toStage,need:firstSong},

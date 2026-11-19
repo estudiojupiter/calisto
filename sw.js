@@ -1,5 +1,5 @@
 // Calisto · funciona sem internet. Gerado por montar-site.py (não editar à mão).
-const CACHE='calisto-7aca22c840';
+const CACHE='calisto-2089651a75';
 const APP=["./", "index.html", "sync.js", "spotify.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/icon-maskable-512.png"];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP)).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('calisto-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});
