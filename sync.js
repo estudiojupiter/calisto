@@ -6,7 +6,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, query, where, writeBatch, serverTimestamp,
-  Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  Timestamp, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const fb = initializeApp({
   apiKey: 'AIzaSyBuAc6ADu1qf5RIIGPdY_oB_jHRGCB5WXs',
@@ -30,6 +30,8 @@ let st = load();
 const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
 function hash(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 const metaOf = ({ pls, prefs, ui }) => ({ pls, prefs, singers: ui.singers || [] });
+// cada aparelho tem um nome; quando um sobe mudança, avisa os outros pelo "sinal" (meta/ping) e eles puxam na hora
+const DEV = (() => { try { let d = localStorage.getItem('calisto.dev'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('calisto.dev', d); } return d; } catch (e) { return Math.random().toString(36).slice(2, 10); } })();
 const kTA = s => (s.title || '').trim().toLowerCase() + '|' + (s.artist || '').trim().toLowerCase();
 
 let user = null, busy = false, again = false, timer = 0, status = 'out', lastOk = 0;
@@ -125,6 +127,7 @@ async function push() {
     b.set(doc(db, 'users', user.uid, 'meta', 'state'), { j: mj, u: serverTimestamp() });
     await b.commit(); st.mh = mh; keep();
   }
+  try { await setDoc(doc(db, 'users', user.uid, 'meta', 'ping'), { dev: DEV, u: serverTimestamp() }); } catch (e) {}
   return ops.length + (metaDirty ? 1 : 0);
 }
 
@@ -196,4 +199,14 @@ function accountBox() {
 btn.addEventListener('click', () => user ? accountBox() : loginBox());
 
 show('out');
-onAuthStateChanged(auth, u => { user = u; if (u) sync(); else show('out'); });
+let unPing = null;
+function listen() {
+  if (unPing) { unPing(); unPing = null; }
+  if (!user) return;
+  // ao vivo: mudou no Mac, o celular puxa em segundos (e vice-versa), sem precisar fechar e abrir
+  unPing = onSnapshot(doc(db, 'users', user.uid, 'meta', 'ping'), d => {
+    if (d.metadata.hasPendingWrites) return;
+    const v = d.data(); if (v && v.dev && v.dev !== DEV) { clearTimeout(timer); timer = setTimeout(sync, 400); }
+  }, e => console.warn('Calisto ao vivo', e));
+}
+onAuthStateChanged(auth, u => { user = u; listen(); if (u) sync(); else show('out'); });
