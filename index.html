@@ -125,8 +125,6 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .mlab{color:var(--muted);font-size:.85rem;margin:10px 0 6px}
 .hint2{color:var(--muted);font-size:.75rem;line-height:1.4}
 .chart .pressed{background:rgba(255,255,255,.06);border-radius:6px}
-.chart.two{columns:2;column-gap:3em;column-rule:1px solid var(--line)}
-.chart.two>.s{break-after:avoid}
 /* rodapé do palco: fica abaixo da letra (nunca por cima) */
 .foot{position:absolute;left:0;right:0;bottom:0;justify-content:space-between;padding-left:max(10px,env(safe-area-inset-left,0px));z-index:6;display:flex;gap:8px;padding:8px;padding-right:max(10px,env(safe-area-inset-right,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px));transition:transform .22s ease}
 .foot button{min-height:64px;min-width:0;max-width:47vw;display:flex;align-items:center;gap:8px;padding:6px 16px;border-radius:16px;font-weight:700;background:rgba(21,25,34,.28);border-color:rgba(255,255,255,.14);text-shadow:0 1px 3px #000}
@@ -200,10 +198,10 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .prog{height:6px;border-radius:3px;background:var(--line);overflow:hidden}.prog i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
 /* ---- ferramentas: afinador · metrônomo · diapasão ---- */
 .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:2px;gap:2px}
-.seg button{border:0;background:none;min-height:34px;padding:4px 10px;font-size:.85rem;color:var(--muted);border-radius:9px}
+.seg button{border:0;background:none;min-height:44px;padding:6px 16px;font-size:.98rem;font-weight:600;color:var(--muted);border-radius:9px}
 .seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
 #tuner .tnhead .sp{min-width:44px}#tnClose{min-width:44px}
-@media (max-width:420px){.seg button{padding:4px 8px;font-size:.82rem}}
+@media (max-width:420px){.seg button{padding:6px 10px;font-size:.9rem}}
 #pMt,#pDp{justify-content:flex-start;gap:18px;width:min(560px,100%);margin:0 auto;overflow-y:auto}
 .mtbpm{display:flex;align-items:center;justify-content:center;gap:clamp(12px,5vw,36px);width:100%;margin-top:8px}
 .mtbig{width:clamp(72px,22vw,96px);height:clamp(72px,22vw,96px);border-radius:50%;font-size:2.4rem;font-weight:300;line-height:1;touch-action:manipulation;-webkit-user-select:none;user-select:none}
@@ -226,6 +224,8 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .dpgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
 .dpgrid button{min-height:64px;font-size:1.25rem;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0}
 .dpgrid button small{font-size:.62rem;font-weight:500;color:var(--muted)}
+.dpgrid button em{font-style:normal;font-size:.62rem;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
+.dpgrid button.on em{color:var(--accent-ink)}
 .dpgrid button.on{background:var(--accent);color:var(--accent-ink)}.dpgrid button.on small{color:var(--accent-ink)}
 #mtPill{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:22;border-radius:999px;display:flex;gap:10px;align-items:center;background:var(--panel);border:1px solid var(--accent);color:var(--accent);font-weight:700;box-shadow:0 4px 18px rgba(0,0,0,.45)}
 #mtPill b{color:var(--ink);font-weight:800}
@@ -355,7 +355,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
       <div class="row" id="eOrigRow" hidden style="margin-top:8px"><button class="mini" id="eOrig">Restaurar a cifra como foi importada</button></div>
     </details>
     <p class="enote" id="eNote"></p>
-    <div id="eRec" hidden><div class="rrow"><button class="recb" id="rBtn"><span class="rdot"></span><span id="rLab">Gravar</span></button><span class="rtime" id="rTime"></span><button class="mini" id="dBtn">🎙 Ditar letra</button></div><div class="rlist" id="rList"></div></div>
+    <div id="eRec" hidden><div class="rrow"><button class="recb" id="rBtn"><span class="rdot"></span><span id="rLab">Gravar</span></button><span class="rtime" id="rTime"></span><button class="mini" id="dBtn">🎙 Ditar letra</button><button class="mini" id="cDone" style="margin-left:auto">✓ Finalizar</button></div><div class="rlist" id="rList"></div></div>
     <div class="ework"><textarea class="f" id="eX" wrap="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Texto da cifra"></textarea><div id="eCol" aria-label="Acordes para inserir"></div></div>
   </div>
   <div class="edock wrapx" id="eDock"><div id="eCh" aria-label="Acordes para inserir"></div><button class="mini" id="eKb" hidden aria-label="Fechar o teclado">⌨︎ ↓</button></div>
@@ -370,7 +370,6 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
   <input type="range" id="mtR" class="mtrange" min="30" max="260" aria-label="BPM">
   <div class="mtdots" id="mtDots"></div><p class="mthint">Toque nos círculos para escolher onde fica a batida forte.</p>
   <div class="mtrow"><span class="lab">Compasso</span><div class="chips" id="mtSig"></div></div>
-  <div class="mtrow"><span class="lab">Tempos</span><button class="mini" id="mtBDn" aria-label="Menos tempos">−</button><b id="mtBeats">4</b><button class="mini" id="mtBUp" aria-label="Mais tempos">+</button><button class="mini" id="mtNoAcc">Sem batida forte</button></div>
   <div class="mtrow"><span class="lab">Volume</span><input type="range" id="mtVol" min="0" max="100" aria-label="Volume do metrônomo"></div>
   <div class="mtact"><button id="mtTap">Tap</button><button class="primary" id="mtPlay">▶ Começar</button></div>
  </div>
@@ -765,7 +764,8 @@ function pickPlaylists(sid){const s=songs.find(x=>x.id===sid);if(!s)return;
 function open(ids,i,sg,plid){queue=ids.filter(id=>songs.some(s=>s.id===id));if(!queue.length)return;singer=sg||'';origView=false;curPlay=plid||null;plMode=!!plid&&!sg;qi=Math.max(0,Math.min(i,queue.length-1));$('lib').hidden=true;$('stage').hidden=false;show();keepAwake();if(!ui.tip1){ui.tip1=1;save();setTimeout(()=>toast('Dica: encoste na letra para pausar ou continuar. Segure numa linha para lembrete ou marca-texto.'),400)}}
 const speedOf=id=>(prefs[id]&&prefs[id].speed)||ui.speed;
 function show(){
-  stopScroll();cur=songs.find(s=>s.id===queue[qi]);$('sheet').classList.toggle('cols',ui.cols!==false);$('cols').classList.toggle('on',ui.cols!==false);const pl=curPlay&&plOf(curPlay);const ptr=pl&&pl.tr&&pl.tr[cur.id]!=null?pl.tr[cur.id]:null;
+  stopScroll();queue=queue.filter(id=>songs.some(s=>s.id===id));if(!queue.length){$('back').click();return}qi=Math.max(0,Math.min(qi,queue.length-1)); /* música apagada em outro aparelho: pula sem travar */
+  cur=songs.find(s=>s.id===queue[qi]);$('sheet').classList.toggle('cols',ui.cols!==false);$('cols').classList.toggle('on',ui.cols!==false);const pl=curPlay&&plOf(curPlay);const ptr=pl&&pl.tr&&pl.tr[cur.id]!=null?pl.tr[cur.id]:null;
   tr=origView?tmpTr:singer?getTr(cur.id,singer):plMode&&ptr!=null?ptr:getTr(cur.id,'');
   $('ttl').textContent=(isPlayed(cur.id)?'✓ ':'')+cur.title;$('pos').textContent=queue.length>1?`${qi+1}/${queue.length}`:'';
   const k=trKey(cur.key,tr)||'—';
@@ -774,7 +774,7 @@ function show(){
   $('sheet').style.fontSize=ui.font+'px';
   const quem=origView?(tr?`Original ${cur.key}, ajustado agora para ${k} (não fica salvo)`:`Tom original: ${k}`):singer?(hasSg(cur.id,singer)?`Tom de ${singer}: ${k}`:`${singer} ainda sem tom salvo (mostrando ${mine?'o seu':'o original'}: ${k})`):plMode&&ptr!=null?`Tom da playlist: ${k}`:mine?`Meu tom: ${k}`:`Tom original: ${k}`;
   const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cur.capo?`Capo ${cur.capo}`:'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
-  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${render(cur,tr)}</div>`;
+  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${safeRender(cur,tr)}</div>`;
   toggleChrome(false);padTop();fitCols();
   $('sheet').scrollTop=0;$('prev').disabled=qi===0;$('next').disabled=qi>=queue.length-1;
   const nmOf=i=>{const s=songs.find(x=>x.id===queue[i]);return s?s.title:''};
@@ -782,9 +782,8 @@ function show(){
   clearTimeout(plTimer);const id=cur.id;plTimer=setTimeout(()=>{setPlayed(id,true);if(cur&&cur.id===id)$('ttl').textContent='✓ '+cur.title},15000); // aberta por 15 s = tocada
 }
 // computador: se a música cabe inteira em 2 colunas, mostra em 2 colunas (sem precisar rolar). No celular, sempre 1 coluna.
-function fitCols(){const c=$('chart');if(!c)return;c.classList.remove('two');if(window.innerWidth<900)return;
-  const el=$('sheet');const head=el.querySelector('.head');const avail=el.clientHeight-(head?head.offsetHeight:0)-36;
-  const hgt=c.scrollHeight;if(hgt>avail&&hgt<avail*1.9)c.classList.add('two')}
+function fitCols(){} /* as duas colunas agora são o botão ⫼ (classe .cols); a regra antiga saiu para não brigar com ela */
+function safeRender(song,t){try{return render(song,t)}catch(e){console.warn('Calisto: cifra com formato estranho',e);return `<pre style="white-space:pre-wrap;font:inherit">${h(song.text||'')}</pre>`}}
 let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!$('stage').hidden){padTop();fitCols()}},150)});
 function setTr(n){tr=((n%12)+12)%12;if(tr>6)tr-=12;const p=prefs[cur.id]=prefs[cur.id]||{};
   if(origView)tmpTr=tr; // vendo o original: o ajuste é só de momento, não salva
@@ -886,7 +885,7 @@ $('more').addEventListener('click',()=>{stopScroll();const pl=()=>isPlayed(cur.i
     else if(k==='fd'||k==='fu'){$(k==='fd'?'fDn':'fUp').click();$('mBody').innerHTML=html()}
     else if(k==='pl'){setPlayed(cur.id,!pl());$('ttl').textContent=(pl()?'✓ ':'')+cur.title;closeModal();toast(pl()?'Marcada como tocada':'Desmarcada')}},null,'Fechar')});
 // editar a cifra na hora (ensaio): muda o texto salvo da música; a transposição continua guardada à parte
-$('edit').addEventListener('click',()=>{stopScroll();edFrom='';$('eRec').hidden=true;$('eTtl').textContent='Editar cifra';$('eT').value=cur.title;$('eA').value=cur.artist;$('eK').value=cur.key;$('eC').value=cur.capo||'';$('eD').value=cur.dur?mmss(cur.dur):'';$('eX').value=cur.text;
+$('edit').addEventListener('click',()=>{stopScroll();edFrom='';cDoneArm=0;$('cDone').hidden=true;$('eRec').hidden=!(cur.recs&&cur.recs.length);if(!$('eRec').hidden){drawRecs();recUi();dictUi()}$('eTtl').textContent='Editar cifra';$('eT').value=cur.title;$('eA').value=cur.artist;$('eK').value=cur.key;$('eC').value=cur.capo||'';$('eD').value=cur.dur?mmss(cur.dur):'';$('eX').value=cur.text;
   $('eNote').textContent=tr?`No palco você está em ${trKey(cur.key,tr)}; aqui a cifra aparece no tom original (${cur.key||'—'}). Edite no original: a transposição continua valendo.`:'';
   $('eOrigRow').hidden=!cur.orig;$('eMeta').open=window.innerWidth>560;eSummary();$('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor()}); // no celular os dados ficam recolhidos e a cifra ocupa a tela
 // sugestões de acorde: campo harmônico do tom + acordes de fora que já aparecem na música (empréstimo modal etc.)
@@ -922,7 +921,8 @@ $('eSave').addEventListener('click',()=>{const fromComp=edFrom==='comp';snap(fro
   cur.title=$('eT').value.trim()||cur.title;cur.artist=$('eA').value.trim();cur.key=$('eK').value.trim();cur.text=x;
   cur.capo=Math.max(0,Math.min(12,parseInt($('eC').value,10)||0));cur.dur=parseDur($('eD').value);
   if(cur.orig!=null&&x===cur.orig)delete cur.orig;
-  if(fromComp)cur.mt=Date.now();delete cur.fresh;save();closeEditor();if(fromComp){drawList();toast('Ideia salva',1);return}const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
+  const fin=fromComp&&finishing;finishing=false;if(fin){delete cur.comp;cur.fin=Date.now();songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'))}
+  if(fromComp)cur.mt=Date.now();delete cur.fresh;save();closeEditor();if(fromComp){drawList();toast(fin?`"${cur.title}" foi para a Biblioteca`:'Ideia salva',1);return}const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
 let origArm=0;$('eOrig').addEventListener('click',()=>{if(Date.now()-origArm<3000){$('eX').value=cur.orig;toast('Texto original de volta. Toque em Salvar para confirmar')}else{origArm=Date.now();toast('Toque de novo para restaurar')}});
 // teclado do computador: ← → trocam de música, Esc volta à lista
 document.addEventListener('keydown',e=>{if($('stage').hidden||!$('editor').hidden||!$('modal').hidden||/INPUT|TEXTAREA/.test(e.target.tagName))return;
@@ -935,7 +935,12 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('stage
 let tt;function toast(m,canUndo){const t=$('toast');t.textContent=m;if(canUndo&&undoSt.length){const b=document.createElement('button');b.className='tundo';b.textContent='Desfazer';b.addEventListener('click',e=>{e.stopPropagation();t.hidden=true;undo()});t.append(b)}t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,canUndo?6000:2800)}
 
 /* ---------- composição: ideias com letra, gravações (neste aparelho) e ditado ---------- */
-let edFrom='';
+let edFrom='',finishing=false,cDoneArm=0;
+// finalizar: a ideia vira música da Biblioteca (com letra, gravações e tudo); antes disso ela fica só na Composição
+document.addEventListener('click',e=>{if(e.target.id!=='cDone')return;const b=e.target;
+  if(Date.now()-cDoneArm>3000){cDoneArm=Date.now();b.textContent='Toque de novo: vai para a Biblioteca';return}
+  if(!$('eX').value.trim()){toast('Escreva a letra ou a cifra antes de finalizar');return}
+  finishing=true;$('eSave').click()});
 const ADB={p:null,open(){return this.p||(this.p=new Promise((ok,no)=>{const r=indexedDB.open('calisto-audio',1);r.onupgradeneeded=()=>r.result.createObjectStore('rec');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}))},
   async tx(mode,fn){const d=await this.open();return new Promise((ok,no)=>{const t=d.transaction('rec',mode);const q=fn(t.objectStore('rec'));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})},
   put(k,v){return this.tx('readwrite',o=>o.put(v,k))},get(k){return this.tx('readonly',o=>o.get(k))},del(k){return this.tx('readwrite',o=>o.delete(k))}};
@@ -944,7 +949,7 @@ function newIdea(rec){const d=new Date(),p=n=>String(n).padStart(2,'0');const s=
   songs.push(s);save();openIdea(s.id,rec)}
 function openIdea(id,rec){const s=songs.find(x=>x.id===id);if(!s)return;cur=s;edFrom='comp';tr=0;
   $('eTtl').textContent='Composição';$('eT').value=s.title;$('eA').value=s.artist||'';$('eK').value=s.key||'';$('eC').value=s.capo||'';$('eD').value=s.dur?mmss(s.dur):'';$('eX').value=s.text||'';
-  $('eNote').textContent='';$('eOrigRow').hidden=true;$('eMeta').open=false;eSummary();$('eRec').hidden=false;drawRecs();recUi();dictUi();
+  $('eNote').textContent='';$('eOrigRow').hidden=true;$('eMeta').open=false;eSummary();$('eRec').hidden=false;$('cDone').hidden=false;cDoneArm=0;$('cDone').textContent='✓ Finalizar';drawRecs();recUi();dictUi();
   $('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor();if(rec)recStart()}
 $('newIdea').addEventListener('click',()=>newIdea(false));$('recIdea').addEventListener('click',()=>newIdea(true));
 let rec=null;const REC_GAIN=3.2; /* +10 dB depois do compressor; o limitador segura os picos */
@@ -1026,10 +1031,10 @@ const MT=Object.assign({bpm:100,beats:4,unit:4,acc:[0],vol:80},ui.mt||{});
 let mtOn=false,mtNext=0,mtBeat=0,mtTimer=0,mtQ=[],mtG=null,mtRaf=0,mtTaps=[];
 function mtSave(){ui.mt=MT;store.set('ui',ui)}
 const SIGS=[['2/4',2,4,[0]],['3/4',3,4,[0]],['4/4',4,4,[0]],['5/4',5,4,[0]],['6/8',6,8,[0,3]],['7/8',7,8,[0,2,4]],['9/8',9,8,[0,3,6]],['12/8',12,8,[0,3,6,9]]];
-function mtDraw(){$('mtBpm').textContent=MT.bpm;$('mtR').value=MT.bpm;$('mtBeats').textContent=MT.beats;$('mtVol').value=MT.vol;
+function mtDraw(){$('mtBpm').textContent=MT.bpm;$('mtR').value=MT.bpm;$('mtVol').value=MT.vol;
   $('mtDots').innerHTML=Array.from({length:MT.beats},(_,i)=>`<button data-b="${i}" class="${MT.acc.includes(i)?'a':''}" aria-label="Tempo ${i+1}${MT.acc.includes(i)?', forte':''}">${i+1}</button>`).join('');
-  $('mtSig').innerHTML=SIGS.map(([l,b,u])=>`<button data-sig="${l}" class="${b===MT.beats&&u===MT.unit?'on':''}">${l}</button>`).join('');
-  $('mtNoAcc').classList.toggle('on',!MT.acc.length);$('mtPlay').textContent=mtOn?'■ Parar':'▶ Começar';$('mtPlay').classList.toggle('on',!mtOn);pillUi()}
+  $('mtSig').innerHTML=SIGS.map(([l,b,u])=>`<button data-sig="${l}" class="${b===MT.beats&&u===MT.unit?'on':''}">${l}</button>`).join('')+`<button id="mtNoAcc" class="${MT.acc.length?'':'on'}">Sem batida forte</button>`;
+$('mtPlay').textContent=mtOn?'■ Parar':'▶ Começar';$('mtPlay').classList.toggle('on',!mtOn);pillUi()}
 function mtBpm(v){MT.bpm=Math.max(30,Math.min(260,Math.round(v)));$('mtBpm').textContent=MT.bpm;$('mtR').value=MT.bpm;pillUi();clearTimeout(mtBpm.t);mtBpm.t=setTimeout(mtSave,400)}
 function mtClick(t,strong){const ac=oac,o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=strong?1760:1100;
   g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(strong?1:.55,t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+.055);o.connect(g).connect(mtG);o.start(t);o.stop(t+.07)}
@@ -1044,10 +1049,8 @@ function hold(el,fn){let t1=0,t2=0;const end=()=>{clearTimeout(t1);clearInterval
 hold($('mtDn'),()=>mtBpm(MT.bpm-1));hold($('mtUp'),()=>mtBpm(MT.bpm+1));
 $('mtR').addEventListener('input',e=>mtBpm(+e.target.value));
 $('mtDots').addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;const i=+b.dataset.b;MT.acc=MT.acc.includes(i)?MT.acc.filter(x=>x!==i):[...MT.acc,i].sort((a,b)=>a-b);mtSave();mtDraw()});
-$('mtSig').addEventListener('click',e=>{const b=e.target.closest('[data-sig]');if(!b)return;const g=SIGS.find(x=>x[0]===b.dataset.sig);MT.beats=g[1];MT.unit=g[2];MT.acc=g[3].slice();if(mtBeat>=MT.beats)mtBeat=0;mtSave();mtDraw()});
-$('mtBDn').addEventListener('click',()=>{if(MT.beats>1){MT.beats--;MT.acc=MT.acc.filter(x=>x<MT.beats);if(mtBeat>=MT.beats)mtBeat=0;mtSave();mtDraw()}});
-$('mtBUp').addEventListener('click',()=>{if(MT.beats<16){MT.beats++;mtSave();mtDraw()}});
-$('mtNoAcc').addEventListener('click',()=>{MT.acc=MT.acc.length?[]:[0];mtSave();mtDraw()});
+$('mtSig').addEventListener('click',e=>{if(e.target.closest('#mtNoAcc')){const g=SIGS.find(x=>x[1]===MT.beats&&x[2]===MT.unit);MT.acc=MT.acc.length?[]:(g?g[3].slice():[0]);mtSave();mtDraw();return}const b=e.target.closest('[data-sig]');if(!b)return;const g=SIGS.find(x=>x[0]===b.dataset.sig);MT.beats=g[1];MT.unit=g[2];MT.acc=g[3].slice();if(mtBeat>=MT.beats)mtBeat=0;mtSave();mtDraw()});
+
 $('mtVol').addEventListener('input',e=>{MT.vol=+e.target.value;if(mtG)mtG.gain.value=Math.pow(MT.vol/100,2);clearTimeout(mtBpm.v);mtBpm.v=setTimeout(mtSave,400)});
 $('mtTap').addEventListener('click',()=>{const t=performance.now();mtTaps=mtTaps.filter(x=>t-x<2500);mtTaps.push(t);if(mtTaps.length>=2){const d=(mtTaps[mtTaps.length-1]-mtTaps[0])/(mtTaps.length-1);mtBpm(60000/d)}if(mtTaps.length>6)mtTaps.shift()});
 function pillUi(){$('mtPill').hidden=!mtOn||!$('tuner').hidden;$('mtPillN').textContent=`♩ ${MT.bpm}`}
@@ -1057,7 +1060,7 @@ mtDraw();
 // diapasão: as 12 notas em senoide, afinadas pelo Lá do afinador
 const DP=Object.assign({oct:4,vol:60},ui.dp||{});let dpO=null,dpGn=null,dpN=null;
 const DPN=[['C',''],['C#','Db'],['D',''],['D#','Eb'],['E',''],['F',''],['F#','Gb'],['G',''],['G#','Ab'],['A',''],['A#','Bb'],['B','']];
-function dpDraw(){$('dpGrid').innerHTML=DPN.map(([a,b],i)=>`<button data-n="${i}" class="${dpN===i?'on':''}">${a}${b?`<small>${b}</small>`:''}</button>`).join('');
+function dpDraw(){$('dpGrid').innerHTML=DPN.map(([a,b],i)=>`<button data-n="${i}" class="${dpN===i?'on':''}">${a}${b?`<small>${b}</small>`:''}<em>${dpHz(i).toFixed(1)} Hz</em></button>`).join('');
   $('dpOct').innerHTML=[2,3,4,5].map(o=>`<button data-o="${o}" class="${DP.oct===o?'on':''}">${o}</button>`).join('');$('dpVol').value=DP.vol}
 function dpHz(i){return tnA()*Math.pow(2,(12*(DP.oct+1)+i-69)/12)}
 function dpStop(){if(!dpO)return;const o=dpO,g=dpGn,t=oac.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+.06);o.stop(t+.08);dpO=dpGn=null;dpN=null;dpDraw();$('dpInfo').textContent='Toque numa nota para ouvir. Toque de novo para parar.'}
@@ -1131,7 +1134,7 @@ if(!ui.tour1){ui.tour1=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidde
   e=>{if(e.target.closest('[data-t]')){closeModal();tour()}},null,'Agora não')},1500)}
 /* ---------- desfazer: guarda uma foto do catálogo antes das ações que mudam coisas (até 10) ---------- */
 const undoSt=[];
-function snap(label,after){try{undoSt.push({label,after,j:JSON.stringify({songs,pls,prefs})});if(undoSt.length>10)undoSt.shift()}catch(e){}}
+function snap(label,after){try{undoSt.push({label,after,j:JSON.stringify({songs,pls,prefs})});if(undoSt.length>8)undoSt.shift()}catch(e){}}
 function undo(){const u=undoSt.pop();if(!u){toast('Nada para desfazer');return}window.calistoApp.apply(JSON.parse(u.j));save();drawList();
   if(!$('stage').hidden&&curPlay&&plOf(curPlay)&&cur){queue=plOf(curPlay).items.filter(id=>songs.some(s=>s.id===id));const k=queue.indexOf(cur.id);if(k>=0)qi=k}
   if(!$('stage').hidden&&cur){const live=songs.find(x=>x.id===cur.id);if(live){cur=live;const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y}else $('back').click()}
@@ -1166,7 +1169,7 @@ function tunerLoop(){if(!tn)return;tn.raf=requestAnimationFrame(tunerLoop);const
   T.classList.remove('idle');T.classList.toggle('ok',Math.abs(c)<=4);
   $('tnStr').querySelectorAll('span').forEach(x=>x.classList.toggle('on',+x.dataset.m===n))}
 $('tTun').addEventListener('click',tunerOpen);$('tnClose').addEventListener('click',tunerClose);
-$('tnAdn').addEventListener('click',()=>{ui.a4=Math.max(430,tnA()-1);store.set('ui',ui);tnDrawA()});$('tnAup').addEventListener('click',()=>{ui.a4=Math.min(450,tnA()+1);store.set('ui',ui);tnDrawA()});
+$('tnAdn').addEventListener('click',()=>{ui.a4=Math.max(430,tnA()-1);store.set('ui',ui);tnDrawA();if(typeof dpDraw==='function')dpDraw()});$('tnAup').addEventListener('click',()=>{ui.a4=Math.min(450,tnA()+1);store.set('ui',ui);tnDrawA();if(typeof dpDraw==='function')dpDraw()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tuner').hidden)tunerClose()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){micStop();dpStop()}else if(!$('tuner').hidden&&ui.tp==='tn')micStart()});
 window.__palco={parse,render,isChordLine,trChord,trKey,setText};
