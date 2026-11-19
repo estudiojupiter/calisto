@@ -182,6 +182,22 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 #eCh .sep{flex:none;align-self:center;color:var(--muted);font-size:.75rem;padding-inline:4px;white-space:nowrap}
 .list{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 #eX{flex:1;min-height:0;font-family:var(--f-mono);font-size:16px;line-height:1.35;white-space:pre;overflow:auto;resize:none;margin-block:6px 8px}
+.toast .tundo{margin-left:12px;background:none;border:0;color:var(--bg);font-weight:800;text-decoration:underline;padding:2px 4px;min-height:0;font-size:inherit}
+#tuner{position:fixed;inset:0;z-index:26;background:var(--bg);display:flex;flex-direction:column}
+#tuner .tnhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;border-bottom:1px solid var(--line)}
+#tuner .tnbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
+#tnNote{font-size:min(34vw,9rem);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink);transition:color .15s}
+#tnNote sub{font-size:.3em;color:var(--muted);font-weight:600;vertical-align:baseline}
+#tuner.ok #tnNote{color:#1ed760}#tuner.idle #tnNote,#tuner.idle .tnmeter{opacity:.35}
+.tnmeter{position:relative;width:min(92vw,520px);height:56px;border-radius:12px;background:var(--panel);border:1px solid var(--line);overflow:hidden}
+.tnmeter .z{position:absolute;left:45%;width:10%;top:0;bottom:0;background:rgba(30,215,96,.16)}
+.tnmeter .c{position:absolute;left:50%;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--line)}
+#tnNeedle{position:absolute;left:50%;top:6px;bottom:6px;width:6px;margin-left:-3px;border-radius:3px;background:var(--accent);transition:left .09s linear}
+#tuner.ok #tnNeedle{background:#1ed760}
+.tnlab{display:flex;justify-content:space-between;width:min(92vw,520px);color:var(--muted);font-size:.78rem;margin-top:-8px}
+#tnCents{color:var(--muted);min-height:1.4em;text-align:center}
+.tnstr{display:flex;gap:8px}.tnstr span{min-width:42px;padding:8px 0;text-align:center;border:1px solid var(--line);border-radius:10px;color:var(--muted);font-weight:700}
+.tnstr span.on{border-color:#1ed760;color:#1ed760}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.9rem;z-index:30;max-width:90vw;text-align:center}
 #print{display:none}
 
@@ -233,6 +249,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
     <button id="tBib" class="on" role="tab"><b>♪</b>Biblioteca <span id="nBib"></span></button>
     <button id="tPls" role="tab"><b>☰</b>Playlists <span id="nPls"></span></button>
     <button id="tSpo" role="tab"><b>◉</b>Spotify <span id="nSpo"></span></button>
+    <button id="tTun"><b>♮</b>Afinador</button>
   </nav>
 </section>
 
@@ -273,6 +290,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 </section>
 
 <div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTtl"><div class="mhead"><b id="mTtl"></b><button id="mClose">Pronto</button></div><div id="mBody"></div></div></div>
+<section id="tuner" class="idle" hidden><div class="tnhead wrapx"><button id="tnClose">← Voltar</button><b>Afinador</b><span style="min-width:4.5em"></span></div><div class="tnbody"><div id="tnNote">–</div><div class="tnmeter"><div class="z"></div><div class="c"></div><div id="tnNeedle"></div></div><div class="tnlab"><span>♭ −50</span><span>0</span><span>+50 ♯</span></div><div id="tnCents">Toque uma corda</div><div class="tnstr" id="tnStr"></div><div class="row" style="align-items:center;gap:10px"><button class="mini" id="tnAdn" aria-label="Lá mais grave">−</button><span id="tnA" style="color:var(--muted);font-variant-numeric:tabular-nums"></span><button class="mini" id="tnAup" aria-label="Lá mais agudo">+</button></div></div></section>
 <div class="toast" id="toast" hidden></div>
 <div id="print"></div>
 
@@ -411,7 +429,7 @@ function save(){store.set('songs',songs);store.set('playlists',pls);store.set('p
 window.calistoApp={state:()=>({songs,pls,prefs,ui}),
   apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x||x===n)return x||n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
     if(o.singers){ui.singers=o.singers;store.set('ui',ui)}if(curPl&&!plOf(curPl)){curPl=null;if(view==='pl')view='pls'}drawList()},
-  modal:(...a)=>modal(...a),close:()=>closeModal(),toast:m=>toast(m),save:()=>save(),redraw:()=>drawList(),fmt:s=>fmtTotal(s)};
+  modal:(...a)=>modal(...a),close:()=>closeModal(),toast:(m,u)=>toast(m,u),snap:(l,a)=>snap(l,a),save:()=>save(),redraw:()=>drawList(),fmt:s=>fmtTotal(s)};
 // biblioteca convertida do backup do OnSong: músicas + playlists (com o tom de cada set). Não sobrescreve o que já existe.
 function importLib(o){const map={};let add=0,same=0,pa=0;
   for(const x of o.songs||[]){const ex=songs.find(s=>s.title.toLowerCase()===x.title.toLowerCase()&&s.artist.toLowerCase()===(x.artist||'').toLowerCase());
@@ -499,9 +517,9 @@ function delSong(id){songs=songs.filter(s=>s.id!==id);pls.forEach(p=>{p.items=p.
 $('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]');if(sh){const p=plOf(sh.dataset.spshare);if(p&&p.spotify){const u=p.spotify.url;if(navigator.share&&!inFrame)navigator.share({title:p.name,url:u}).catch(()=>{});else navigator.clipboard.writeText(u).then(()=>toast('Link copiado'),()=>toast(u))}return}
   const dl=e.target.closest('[data-del]');
   if(dl){e.stopPropagation();const[k,v]=dl.dataset.del.split(':');
-    if(k==='song'){const s=songs.find(x=>x.id===v);delSong(v);toast(`"${s?s.title:'Música'}" apagada`)}
-    else if(k==='pl'){const p=plOf(v);pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`)}
-    else if(k==='item'){const p=plOf(curPl);if(p){p.items.splice(+v,1);save();drawList();toast('Tirada da playlist (continua na biblioteca)')}}
+    if(k==='song'){const s=songs.find(x=>x.id===v);snap('apagar música');delSong(v);toast(`"${s?s.title:'Música'}" apagada`,1)}
+    else if(k==='pl'){const p=plOf(v);snap('apagar playlist');pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`,1)}
+    else if(k==='item'){const p=plOf(curPl);if(p){snap('tirar da playlist');p.items.splice(+v,1);save();drawList();toast('Tirada da playlist (continua na biblioteca)',1)}}
     return}
   if(Date.now()-swNoClick<400)return;
   const open1=$('list').querySelector('li.sw');if(open1){open1.classList.remove('sw');return} // toque fora fecha o botão
@@ -561,9 +579,9 @@ $('plMore').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
       else if(k==='pdf'){closeModal();printSet(p)}
       else if(k==='spot'){closeModal();window.calistoSpotify.create(p)}
       else if(k==='spcheck'){closeModal();window.calistoSpotify.conferir(p)}
-      else if(k==='arch'){p.arch=!p.arch;if(!p.arch)delete p.arch;save();view='pls';closeModal();drawList();toast(p.arch?`"${p.name}" foi para as arquivadas`:`"${p.name}" voltou para as ativas`)}
+      else if(k==='arch'){snap(p.arch?'desarquivar':'arquivar');p.arch=!p.arch;if(!p.arch)delete p.arch;save();view='pls';closeModal();drawList();toast(p.arch?`"${p.name}" foi para as arquivadas`:`"${p.name}" voltou para as ativas`,1)}
       else if(k==='dup'){const c={id:uid(),name:p.name+' (cópia)',items:p.items.slice(),singer:p.singer,tr:Object.assign({},p.tr||{})};pls.splice(pls.indexOf(p)+1,0,c);save();curPl=c.id;closeModal();drawList();toast('Cópia criada. Renomeie se quiser')}
-      else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
+      else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){snap('apagar playlist');pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`,1)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
 
 /* ---------- exportar o set ---------- */
 function setLines(p){const by=Object.fromEntries(songs.map(s=>[s.id,s]));return p.items.filter(id=>by[id]).map((id,i)=>{const s=by[id];const k=trKey(s.key,plTr(p,id));return {n:i+1,t:s.title,a:s.artist,k,capo:s.capo,d:s.dur}})}
@@ -726,9 +744,10 @@ $('sUp').addEventListener('click',()=>setSpeed(speedOf(cur.id)+1));
 $('sDn').addEventListener('click',()=>setSpeed(speedOf(cur.id)-1));
 // celular: ⋯ junta editar, tamanho da letra e marcar como tocada
 $('more').addEventListener('click',()=>{stopScroll();const pl=()=>isPlayed(cur.id);
-  const html=()=>`<button class="big" data-a="ed"><span>✎ Editar cifra</span><span>›</span></button><div class="row" style="align-items:center"><span style="color:var(--muted);flex:1">Tamanho da letra</span><button data-a="fd">A−</button><span style="min-width:2.4em;text-align:center;font-variant-numeric:tabular-nums">${ui.font}</span><button data-a="fu">A+</button></div><button class="big" data-a="pl"><span>${pl()?'Desmarcar como tocada':'✓ Marcar como tocada'}</span><span></span></button>`;
+  const html=()=>`<button class="big" data-a="ed"><span>✎ Editar cifra</span><span>›</span></button><div class="row" style="align-items:center"><span style="color:var(--muted);flex:1">Tamanho da letra</span><button data-a="fd">A−</button><span style="min-width:2.4em;text-align:center;font-variant-numeric:tabular-nums">${ui.font}</span><button data-a="fu">A+</button></div><button class="big" data-a="pl"><span>${pl()?'Desmarcar como tocada':'✓ Marcar como tocada'}</span><span></span></button><button class="big" data-a="tun"><span>♮ Afinador</span><span>›</span></button>`;
   modal(cur.title,html(),e=>{const b=e.target.closest('[data-a]');if(!b)return;const k=b.dataset.a;
     if(k==='ed'){closeModal();$('edit').click()}
+    else if(k==='tun'){closeModal();tunerOpen()}
     else if(k==='fd'||k==='fu'){$(k==='fd'?'fDn':'fUp').click();$('mBody').innerHTML=html()}
     else if(k==='pl'){setPlayed(cur.id,!pl());$('ttl').textContent=(pl()?'✓ ':'')+cur.title;closeModal();toast(pl()?'Marcada como tocada':'Desmarcada')}},null,'Fechar')});
 // editar a cifra na hora (ensaio): muda o texto salvo da música; a transposição continua guardada à parte
@@ -763,12 +782,12 @@ $('eKb').addEventListener('click',()=>$('eX').blur()); // fecha o teclado para v
 function eSummary(){const k=$('eK').value.trim(),c=parseInt($('eC').value,10)||0;$('eSum').textContent=[$('eT').value.trim()||'Música',k?'Tom '+k:'',c?'Capo '+c:''].filter(Boolean).join(' · ')}
 ['eT','eK','eC'].forEach(id=>$(id).addEventListener('input',eSummary));
 $('eCancel').addEventListener('click',closeEditor);
-$('eSave').addEventListener('click',()=>{const x=$('eX').value;{const live=songs.find(s=>s.id===cur.id);if(live&&live!==cur){Object.assign(live,cur);cur=live}else if(!live)songs.push(cur)}
+$('eSave').addEventListener('click',()=>{snap(`edição de "${cur.title}"`);const x=$('eX').value;{const live=songs.find(s=>s.id===cur.id);if(live&&live!==cur){Object.assign(live,cur);cur=live}else if(!live)songs.push(cur)}
   if(cur.orig==null&&x!==cur.text)cur.orig=cur.text; // guarda a versão importada para poder restaurar
   cur.title=$('eT').value.trim()||cur.title;cur.artist=$('eA').value.trim();cur.key=$('eK').value.trim();cur.text=x;
   cur.capo=Math.max(0,Math.min(12,parseInt($('eC').value,10)||0));cur.dur=parseDur($('eD').value);
   if(cur.orig!=null&&x===cur.orig)delete cur.orig;
-  save();closeEditor();const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva')});
+  save();closeEditor();const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
 let origArm=0;$('eOrig').addEventListener('click',()=>{if(Date.now()-origArm<3000){$('eX').value=cur.orig;toast('Texto original de volta. Toque em Salvar para confirmar')}else{origArm=Date.now();toast('Toque de novo para restaurar')}});
 // teclado do computador: ← → trocam de música, Esc volta à lista
 document.addEventListener('keydown',e=>{if($('stage').hidden||!$('editor').hidden||!$('modal').hidden||/INPUT|TEXTAREA/.test(e.target.tagName))return;
@@ -778,7 +797,46 @@ async function keepAwake(){try{wake=await navigator.wakeLock?.request('screen')}
 function releaseWake(){try{wake&&wake.release();wake=null}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('stage').hidden)keepAwake()});
 
-let tt;function toast(m){const t=$('toast');t.textContent=m;t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,2800)}
+let tt;function toast(m,canUndo){const t=$('toast');t.textContent=m;if(canUndo&&undoSt.length){const b=document.createElement('button');b.className='tundo';b.textContent='Desfazer';b.addEventListener('click',e=>{e.stopPropagation();t.hidden=true;undo()});t.append(b)}t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,canUndo?6000:2800)}
+/* ---------- desfazer: guarda uma foto do catálogo antes das ações que mudam coisas (até 10) ---------- */
+const undoSt=[];
+function snap(label,after){try{undoSt.push({label,after,j:JSON.stringify({songs,pls,prefs})});if(undoSt.length>10)undoSt.shift()}catch(e){}}
+function undo(){const u=undoSt.pop();if(!u){toast('Nada para desfazer');return}window.calistoApp.apply(JSON.parse(u.j));save();drawList();
+  if(!$('stage').hidden&&cur){const live=songs.find(x=>x.id===cur.id);if(live){cur=live;const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y}else $('back').click()}
+  toast('Desfeito: '+u.label);if(u.after)setTimeout(u.after,300)}
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&!e.shiftKey&&e.key.toLowerCase()==='z'&&!/INPUT|TEXTAREA/.test(e.target.tagName)&&$('editor').hidden){e.preventDefault();if(!$('modal').hidden)closeModal();undo()}});
+/* ---------- afinador (microfone; nada é gravado nem sai do aparelho) ---------- */
+let tn=null;const STR=[['E',40],['A',45],['D',50],['G',55],['B',59],['E',64]];
+function tnA(){return ui.a4||440}
+function tnDrawA(){$('tnA').textContent=`Lá = ${tnA()} Hz`}
+$('tnStr').innerHTML=STR.map(([n,m],i)=>`<span data-m="${m}">${n}${i===5?'′':''}</span>`).join('');tnDrawA();
+function yin(b,sr){const W=b.length>>1,minL=Math.floor(sr/1100),maxL=Math.min(W-2,Math.floor(sr/60));let e=0;for(let i=0;i<b.length;i++)e+=b[i]*b[i];if(Math.sqrt(e/b.length)<0.006)return -1;
+  const d=new Float32Array(maxL+2);let run=0;for(let t=1;t<=maxL+1;t++){let s2=0;for(let i=0;i<W;i++){const x=b[i]-b[i+t];s2+=x*x}run+=s2;d[t]=run?s2*t/run:1}
+  let T=-1;for(let t=minL;t<=maxL;t++){if(d[t]<0.15){while(t<maxL&&d[t+1]<d[t])t++;T=t;break}}if(T<1)return -1;
+  const x0=d[T-1],x1=d[T],x2=d[T+1],a=(x0+x2-2*x1)/2,sh=a?(x0-x2)/(4*a):0;return sr/(T+(Math.abs(sh)<1?sh:0))}
+async function tunerOpen(){stopScroll();$('tuner').hidden=false;if(tn)return;
+  const AC=window.AudioContext||window.webkitAudioContext;if(!AC||!navigator.mediaDevices){$('tnCents').textContent='Este navegador não deixa usar o microfone.';return}
+  const ac=new AC();tn={ac,hist:[],last:0,quiet:0};
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    if(!tn||tn.ac!==ac){st.getTracks().forEach(t=>t.stop());return}
+    await ac.resume();const an=ac.createAnalyser();an.fftSize=4096;ac.createMediaStreamSource(st).connect(an);Object.assign(tn,{st,an,buf:new Float32Array(an.fftSize)});
+    $('tnCents').textContent='Toque uma corda';tunerLoop()}
+  catch(e){$('tnCents').textContent='Sem acesso ao microfone. Libere o microfone para o Calisto (no iPhone: Ajustes › Safari › Microfone) e abra de novo.';try{ac.close()}catch(_){}tn=null}}
+function tunerClose(){$('tuner').hidden=true;if(!tn)return;cancelAnimationFrame(tn.raf);tn.st&&tn.st.getTracks().forEach(t=>t.stop());try{tn.ac.close()}catch(e){}tn=null}
+function tunerLoop(){if(!tn)return;tn.raf=requestAnimationFrame(tunerLoop);const now=performance.now();if(now-tn.last<55)return;tn.last=now;
+  tn.an.getFloatTimeDomainData(tn.buf);const f=yin(tn.buf,tn.ac.sampleRate),T=$('tuner');
+  if(f<0||f>1200){if(++tn.quiet>18){T.classList.add('idle');T.classList.remove('ok');tn.hist=[]}return}
+  tn.quiet=0;tn.hist.push(f);if(tn.hist.length>5)tn.hist.shift();const fm=tn.hist.slice().sort((a,b)=>a-b)[tn.hist.length>>1];
+  const m=12*Math.log2(fm/tnA())+69,n=Math.round(m),c=Math.round((m-n)*100);
+  $('tnNote').innerHTML=`${NOTES_S[(n%12+12)%12]}<sub>${Math.floor(n/12)-1}</sub>`;
+  $('tnNeedle').style.left=(50+Math.max(-50,Math.min(50,c)))+'%';
+  $('tnCents').textContent=Math.abs(c)<=4?'Afinado':(c<0?`${-c} cents abaixo · aperte`:`${c} cents acima · afrouxe`)+` · ${fm.toFixed(1)} Hz`;
+  T.classList.remove('idle');T.classList.toggle('ok',Math.abs(c)<=4);
+  $('tnStr').querySelectorAll('span').forEach(x=>x.classList.toggle('on',+x.dataset.m===n))}
+$('tTun').addEventListener('click',tunerOpen);$('tnClose').addEventListener('click',tunerClose);
+$('tnAdn').addEventListener('click',()=>{ui.a4=Math.max(430,tnA()-1);store.set('ui',ui);tnDrawA()});$('tnAup').addEventListener('click',()=>{ui.a4=Math.min(450,tnA()+1);store.set('ui',ui);tnDrawA()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tuner').hidden)tunerClose()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&tn)tunerClose()});
 window.__palco={parse,render,isChordLine,trChord,trKey,setText};
 drawList();
 })();
