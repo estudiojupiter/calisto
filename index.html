@@ -37,7 +37,8 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .brand{font-family:'Panchang',var(--f-ui);font-weight:500;letter-spacing:.01em}
 .lhead h1 small{color:var(--muted);font-weight:400;font-size:.8rem;margin-left:6px}
 .qrow{display:flex;gap:6px;padding-block:10px}
-.qrow input{margin:0;flex:1}
+.qrow input{margin:0;flex:1 1 auto;min-width:0;width:auto}
+#bibZero{flex:none;min-height:26px;padding:2px 8px;font-size:.7rem;align-self:center;color:var(--muted);border-radius:999px} /* pequeno: a busca fica com o espaço */
 .tabs{display:flex;gap:0;border-top:1px solid var(--line);margin-inline:-14px;padding:2px 8px 0;background:var(--bg)} /* o body já reserva a área do gesto do iPhone */
 .tabs button{flex:1;border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:1px;font-size:.66rem;color:var(--muted);min-height:38px;padding:2px}
 .tabs button b{font-size:1.05rem;line-height:1;font-weight:400}
@@ -608,7 +609,7 @@ function drawList(){
   const by=Object.fromEntries(songs.map(s=>[s.id,s]));
   const tag=id=>isPlayed(id)?`<span class="badge" data-unplay="${id}" title="Tocada hoje. Toque para desmarcar">tocada</span>`:'';
   if(view==='bib'){
-    const np=playedIds().length;$('bibZero').hidden=!np;$('bibZero').textContent=`Zerar tocadas (${np})`;
+    const np=playedIds().length;$('bibZero').hidden=!np;$('bibZero').textContent=`↺ ${np}`;$('bibZero').title=`Zerar as ${np} tocadas`;$('bibZero').setAttribute('aria-label',`Zerar as ${np} músicas tocadas`);
     const q=norm($('q').value.trim());
     const r=LIB.filter(s=>!q||norm(s.title+' '+s.artist).includes(q));
     $('bibN').hidden=!LIB.length;$('bibN').textContent=q?`${r.length} de ${LIB.length}`:`${LIB.length} músicas`;
