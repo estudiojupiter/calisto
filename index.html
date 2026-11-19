@@ -146,9 +146,11 @@ body.dragging{user-select:none;-webkit-user-select:none}
 input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
 /* janela (escolher músicas / playlists / nome / cantora) */
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
-.mbox{background:var(--bg);border:1px solid var(--line);border-radius:16px 16px 0 0;width:min(640px,100%);max-height:min(88vh,calc(100% - 8px));display:flex;flex-direction:column;padding:12px max(14px,env(safe-area-inset-left,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+.mbox{background:var(--bg);border:1px solid var(--line);border-radius:16px 16px 0 0;width:min(640px,100%);max-height:min(86vh,calc(100% - env(safe-area-inset-top,0px) - 24px));display:flex;flex-direction:column;padding:12px max(14px,env(safe-area-inset-left,0px));padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
 @media (min-width:700px){.modal{align-items:center}.mbox{border-radius:16px}}
-.mhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;flex:none}
+#mClose{min-height:44px;min-width:84px;padding:8px 16px;font-weight:700}
+#mBody{overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;flex:1}
 .mhead b{min-width:0;overflow-wrap:anywhere}
 #mBody{overflow:auto;flex:1;min-height:0;display:flex;flex-direction:column}
 .big{width:100%;min-height:52px;text-align:left;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -741,8 +743,8 @@ function printSet(p){const L=setLines(p);const td=totalDur(p.items);
 /* ---------- janela: nome, catálogo, playlists, cantora ---------- */
 let mHandler=null,mOnClose=null;
 let mOpenT=0;
-function modal(title,html,onClick,onClose,closeLabel){mOpenT=Date.now();$('mTtl').textContent=title;$('mClose').textContent=closeLabel||'Pronto';$('mBody').innerHTML=html;$('modal').hidden=false;mHandler=onClick;mOnClose=onClose}
-function closeModal(){$('modal').hidden=true;$('mBody').innerHTML='';const f=mOnClose;mHandler=mOnClose=null;f&&f()}
+function modal(title,html,onClick,onClose,closeLabel){mOpenT=Date.now();setTimeout(fitModal,0);$('mTtl').textContent=title;$('mClose').textContent=closeLabel||'Pronto';$('mBody').innerHTML=html;$('modal').hidden=false;mHandler=onClick;mOnClose=onClose}
+function closeModal(){$('modal').hidden=true;{const m=$('modal');m.style.top=m.style.height=m.style.bottom=''}$('mBody').innerHTML='';const f=mOnClose;mHandler=mOnClose=null;f&&f()}
 $('mClose').addEventListener('click',closeModal);
 $('modal').addEventListener('click',e=>{if(e.target===$('modal')&&Date.now()-mOpenT>450)closeModal()});
 $('mBody').addEventListener('click',e=>{if(Date.now()-mOpenT<450)return;mHandler&&mHandler(e)}); /* no iPhone, o mesmo toque que abre a janela às vezes caía no botão novo e fechava ela */
@@ -918,7 +920,7 @@ function closeEditor(){const wasRec=!!rec;recStop();dictStop();if(cur&&cur.fresh
 // o editor acompanha a área visível: com o teclado aberto, a fileira de acordes fica colada em cima dele
 function fitEditor(){const ed=$('editor'),vv=window.visualViewport;if(ed.hidden||!vv)return;
   ed.style.top=vv.offsetTop+'px';ed.style.height=vv.height+'px';ed.style.bottom='auto';ed.classList.toggle('kb',window.innerHeight-vv.height>120&&document.activeElement===$('eX'))}
-function fitModal(){const m=$('modal'),vv=window.visualViewport;if(!vv)return;if(m.hidden){m.style.top=m.style.height='';return}m.style.top=vv.offsetTop+'px';m.style.height=vv.height+'px';m.style.bottom='auto'} /* a janela encolhe junto com o teclado: o resultado da busca nunca fica escondido */
+function fitModal(){const m=$('modal'),vv=window.visualViewport;if(!vv)return;const kb=window.innerHeight-vv.height>120;if(m.hidden||!kb){m.style.top=m.style.height=m.style.bottom='';return}m.style.top=vv.offsetTop+'px';m.style.height=vv.height+'px';m.style.bottom='auto'} /* a janela encolhe junto com o teclado: o resultado da busca nunca fica escondido */
 if(window.visualViewport){visualViewport.addEventListener('resize',()=>{fitEditor();fitModal()});visualViewport.addEventListener('scroll',()=>{fitEditor();fitModal()})}
 // celular: a fileira de acordes vira coluna à direita do texto (dentro do app do Claude o iPhone não informa a altura do teclado)
 function placeChords(){const mob=window.innerWidth<=560&&inFrame; /* fora do app do Claude (versão oficial) os acordes ficam colados no teclado */const col=$('eCol'),dock=$('eDock');
@@ -1043,7 +1045,8 @@ let oac=null;
 function outAC(){if(!tn)setSession('playback');if(!oac)oac=new (window.AudioContext||window.webkitAudioContext)();if(oac.state!=='running')oac.resume();return oac}
 function toolPanel(p){ui.tp=p;store.set('ui',ui);['tn','mt','dp'].forEach(k=>$('p'+k[0].toUpperCase()+k.slice(1)).hidden=k!==p);
   $('tuner').querySelectorAll('.seg [data-tp]').forEach(b=>b.classList.toggle('on',b.dataset.tp===p));
-  if(p==='tn'){dpStop();micStart()}else micStop()}
+  if(p!=='dp')dpStop(); /* saiu do diapasão: para de tocar */
+  if(p==='tn')micStart();else micStop()}
 function tunerOpen(p){stopScroll();$('tuner').hidden=false;$('mtPill').hidden=true;toolPanel(typeof p==='string'?p:(ui.tp||'tn'))}
 function tunerClose(){$('tuner').hidden=true;micStop();dpStop();if(!mtOn)mtPaused=false;pillUi()}
 $('tuner').querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(b)toolPanel(b.dataset.tp)});
@@ -1081,14 +1084,16 @@ let pillT=0;$('mtPill').addEventListener('click',()=>{if(pillT){clearTimeout(pil
 document.addEventListener('keydown',e=>{if(e.code==='Space'&&!$('tuner').hidden&&!$('pMt').hidden&&!/INPUT|TEXTAREA|BUTTON/.test(e.target.tagName)){e.preventDefault();mtOn?mtStop():mtStart()}});
 mtDraw();
 // diapasão: as 12 notas em senoide, afinadas pelo Lá do afinador
-const DP=Object.assign({oct:4,vol:60},ui.dp||{});let dpO=null,dpGn=null,dpN=null;
+const DP=Object.assign({oct:4,vol:60},ui.dp||{});if(DP.oct<3||DP.oct>6)DP.oct=4;let dpO=null,dpGn=null,dpN=null;
 const DPN=[['C',''],['C#','Db'],['D',''],['D#','Eb'],['E',''],['F',''],['F#','Gb'],['G',''],['G#','Ab'],['A',''],['A#','Bb'],['B','']];
 function dpDraw(){$('dpGrid').innerHTML=DPN.map(([a,b],i)=>`<button data-n="${i}" class="${dpN===i?'on':''}">${a}${b?`<small>${b}</small>`:''}<em>${dpHz(i).toFixed(1)} Hz</em></button>`).join('');
-  $('dpOct').innerHTML=[2,3,4,5].map(o=>`<button data-o="${o}" class="${DP.oct===o?'on':''}">${o}</button>`).join('');$('dpVol').value=DP.vol}
+  $('dpOct').innerHTML=[3,4,5,6].map(o=>`<button data-o="${o}" class="${DP.oct===o?'on':''}">${o}</button>`).join('');$('dpVol').value=DP.vol}
 function dpHz(i){return tnA()*Math.pow(2,(12*(DP.oct+1)+i-69)/12)}
 function dpStop(){if(!dpO)return;const o=dpO,g=dpGn,t=oac.currentTime;g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(g.gain.value,t);g.gain.linearRampToValueAtTime(0,t+.06);o.stop(t+.08);dpO=dpGn=null;dpN=null;dpDraw();$('dpInfo').textContent='Toque numa nota para ouvir. Toque de novo para parar.'}
-function dpPlay(i){const same=dpN===i;dpStop();if(same)return;const ac=outAC(),o=ac.createOscillator(),g=ac.createGain(),f=dpHz(i);o.type='sine';o.frequency.value=f;g.gain.value=0;g.gain.linearRampToValueAtTime(Math.pow(DP.vol/100,2)*.6,ac.currentTime+.05);
-  o.connect(g).connect(ac.destination);o.start();dpO=o;dpGn=g;dpN=i;dpDraw();$('dpInfo').textContent=`${DPN[i][0]}${DP.oct} · ${f.toFixed(1)} Hz (Lá = ${tnA()} Hz)`}
+function dpPlay(i){const same=dpN===i;dpStop();if(same)return;const ac=outAC(),f=dpHz(i),g=ac.createGain(),t=ac.currentTime,vol=Math.pow(DP.vol/100,2)*.6;
+  /* alto-falante de celular quase não toca grave: abaixo de 260 Hz somo harmônicos suaves (2ª e 3ª) e o ouvido continua escutando a mesma nota */
+  const parts=f<260?[[1,1],[2,.55],[3,.3]]:[[1,1]];const os=parts.map(([m,a])=>{const o=ac.createOscillator(),og=ac.createGain();o.type='sine';o.frequency.value=f*m;og.gain.value=a/parts.reduce((x,y)=>x+y[1],0);o.connect(og).connect(g);o.start();return o});
+  g.gain.value=0;g.gain.linearRampToValueAtTime(vol,t+.05);g.connect(ac.destination);dpO={stop:w=>os.forEach(o=>o.stop(w))};dpGn=g;dpN=i;dpDraw();$('dpInfo').textContent=`${DPN[i][0]}${DP.oct} · ${f.toFixed(1)} Hz (Lá = ${tnA()} Hz)`}
 $('dpGrid').addEventListener('click',e=>{const b=e.target.closest('[data-n]');if(b)dpPlay(+b.dataset.n)});
 $('dpOct').addEventListener('click',e=>{const b=e.target.closest('[data-o]');if(!b)return;DP.oct=+b.dataset.o;ui.dp=DP;store.set('ui',ui);const n=dpN;dpStop();if(n!=null)dpPlay(n);else dpDraw()});
 $('dpVol').addEventListener('input',e=>{DP.vol=+e.target.value;if(dpGn)dpGn.gain.value=Math.pow(DP.vol/100,2)*.6;ui.dp=DP;store.set('ui',ui)});
