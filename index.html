@@ -159,6 +159,8 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 #editor.kb .edock{padding-bottom:2px;padding-top:3px}
 #editor.kb #eRec,#editor.kb #eMeta,#editor.kb .enote{display:none} /* teclado aberto: mais espaço para escrever; feche o teclado para ver gravador e dados */
 #editor.kb .edock .mini{min-height:32px;padding:3px 9px}
+.earr{display:flex;gap:4px;flex:none}.earr .mini{min-width:38px;padding:4px 6px;font-size:.8rem}
+#editor:not(.kb) .earr{display:none} /* as setas só aparecem com o teclado aberto */
 #editor.kb #eX{margin-block:4px 2px}
 .ehead{display:flex;gap:8px;align-items:center;padding-block:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line)}
 .ehead b{flex:1;text-align:center}
@@ -354,15 +356,15 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
         <label class="ar2">Artista<input class="f" id="eA"></label>
         <label>Tom original<input class="f" id="eK" maxlength="8" autocapitalize="characters"></label>
         <label>Capo<input class="f" id="eC" type="number" min="0" max="12" inputmode="numeric" placeholder="0"></label>
-        <label>Duração<input class="f" id="eD" maxlength="6" inputmode="numeric" placeholder="3:45"></label>
+        <label hidden>Duração<input class="f" id="eD" maxlength="6" inputmode="numeric" placeholder="3:45"></label>
       </div>
       <div class="row" id="eOrigRow" hidden style="margin-top:8px"><button class="mini" id="eOrig">Restaurar a cifra como foi importada</button></div>
     </details>
     <p class="enote" id="eNote"></p>
-    <div id="eRec" hidden><div class="rrow"><button class="recb" id="rBtn"><span class="rdot"></span><span id="rLab">Gravar</span></button><span class="rtime" id="rTime"></span><button class="mini" id="dBtn">🎙 Ditar letra</button><button class="mini" id="cDone" style="margin-left:auto">✓ Finalizar</button></div><div class="rlist" id="rList"></div></div>
+    <div id="eRec" hidden><div class="rrow"><button class="recb" id="rBtn"><span class="rdot"></span><span id="rLab">Gravar</span></button><span class="rtime" id="rTime"></span><button class="mini" id="dBtn">🎙 Ditar letra</button></div><div class="rlist" id="rList"></div></div>
     <div class="ework"><textarea class="f" id="eX" wrap="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Texto da cifra"></textarea><div id="eCol" aria-label="Acordes para inserir"></div></div>
   </div>
-  <div class="edock wrapx" id="eDock"><div id="eCh" aria-label="Acordes para inserir"></div><button class="mini" id="eKb" hidden aria-label="Fechar o teclado">⌨︎ ↓</button></div>
+  <div class="edock wrapx" id="eDock"><div class="earr" id="eArr" aria-label="Mover o cursor"><button class="mini" data-mv="L" aria-label="Cursor para a esquerda">◀</button><button class="mini" data-mv="U" aria-label="Linha de cima">▲</button><button class="mini" data-mv="D" aria-label="Linha de baixo">▼</button><button class="mini" data-mv="R" aria-label="Cursor para a direita">▶</button></div><div id="eCh" aria-label="Acordes para inserir"></div><button class="mini" id="eKb" hidden aria-label="Fechar o teclado">⌨︎ ↓</button></div>
 </section>
 
 <div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTtl"><div class="mhead"><b id="mTtl"></b><button id="mClose">Pronto</button></div><div id="mBody"></div></div></div>
@@ -615,7 +617,7 @@ function drawList(){
     const r=songs.filter(s=>s.comp&&(!qq||norm(s.title+' '+(s.text||'')).includes(qq))).sort((a,b)=>(b.mt||0)-(a.mt||0));
     const dt=t=>t?new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
     $('list').innerHTML=r.length?r.map(s=>{const n=(s.recs||[]).length,l1=(s.text||'').split('\n').find(x=>x.trim())||'';
-      return `<li class="idea"><div class="open" data-comp="${s.id}"><div class="t">${h(s.title)}</div><div class="a">${[dt(s.mt),n?`🎙 ${n}`:'',h(l1)].filter(Boolean).join(' · ')}</div></div><span></span><span></span><button class="swdel" data-del="comp:${s.id}">Apagar</button></li>`}).join('')
+      return `<li class="idea"><div class="open" data-comp="${s.id}"><div class="t">${h(s.title)}</div><div class="a">${[dt(s.mt),n?`🎙 ${n}`:'',h(l1)].filter(Boolean).join(' · ')}</div></div><span></span><button class="mini" data-fin="${s.id}">✓ Finalizar</button><button class="swdel" data-del="comp:${s.id}">Apagar</button></li>`}).join('')
       :`<li class="empty">${qq?'Nada com essa busca.':'Nenhuma ideia ainda. Toque em <b>Gravar agora</b> para registrar a primeira melodia, ou em <b>+ Nova ideia</b> para começar pela letra.'}</li>`;
   }else if(view==='spo'){
     const sp=window.calistoSpotify;const withL=pls.filter(p=>p.spotify&&p.spotify.url&&plMatch(p));
@@ -656,8 +658,10 @@ $('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]
     return}
   if(Date.now()-swNoClick<400)return;
   const open1=$('list').querySelector('li.sw');if(open1){open1.classList.remove('sw');return} // toque fora fecha o botão
-  if(e.target.closest('[data-arch]')){ui.showArch=!ui.showArch;store.set('ui',ui);drawList();return}const t=e.target.closest('[data-comp],[data-unplay],[data-open],[data-addto],[data-pl],[data-plplay],[data-play],[data-up],[data-rm]');if(!t)return;const d=t.dataset;
+  if(e.target.closest('[data-arch]')){ui.showArch=!ui.showArch;store.set('ui',ui);drawList();return}const t=e.target.closest('[data-fin],[data-comp],[data-unplay],[data-open],[data-addto],[data-pl],[data-plplay],[data-play],[data-up],[data-rm]');if(!t)return;const d=t.dataset;
   if(d.comp){openIdea(d.comp);return}
+  if(d.fin){const s=songs.find(x=>x.id===d.fin);if(!s)return;if(!t.dataset.arm||Date.now()-t.dataset.arm>3000){t.dataset.arm=Date.now();t.textContent='Toque de novo';return}
+    if(!(s.text||'').trim()){toast('Escreva a letra ou a cifra antes de finalizar');return}snap(`finalizar "${s.title}"`);delete s.comp;delete s.dur;s.fin=Date.now();songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();drawList();toast(`"${s.title}" foi para a Biblioteca`,1);return}
   if(d.unplay){e.stopPropagation();setPlayed(d.unplay,false);drawList();toast('Desmarcada')}
   else if(d.addto)pickPlaylists(d.addto);
   else if(d.open){const ids=[...$('list').querySelectorAll('[data-open]')].map(x=>x.dataset.open);open(ids,ids.indexOf(d.open),'')} // abre na ordem da lista: dá para ir à próxima/anterior
@@ -733,11 +737,12 @@ function printSet(p){const L=setLines(p);const td=totalDur(p.items);
 
 /* ---------- janela: nome, catálogo, playlists, cantora ---------- */
 let mHandler=null,mOnClose=null;
-function modal(title,html,onClick,onClose,closeLabel){$('mTtl').textContent=title;$('mClose').textContent=closeLabel||'Pronto';$('mBody').innerHTML=html;$('modal').hidden=false;mHandler=onClick;mOnClose=onClose}
+let mOpenT=0;
+function modal(title,html,onClick,onClose,closeLabel){mOpenT=Date.now();$('mTtl').textContent=title;$('mClose').textContent=closeLabel||'Pronto';$('mBody').innerHTML=html;$('modal').hidden=false;mHandler=onClick;mOnClose=onClose}
 function closeModal(){$('modal').hidden=true;$('mBody').innerHTML='';const f=mOnClose;mHandler=mOnClose=null;f&&f()}
 $('mClose').addEventListener('click',closeModal);
-$('modal').addEventListener('click',e=>{if(e.target===$('modal'))closeModal()});
-$('mBody').addEventListener('click',e=>mHandler&&mHandler(e));
+$('modal').addEventListener('click',e=>{if(e.target===$('modal')&&Date.now()-mOpenT>450)closeModal()});
+$('mBody').addEventListener('click',e=>{if(Date.now()-mOpenT<450)return;mHandler&&mHandler(e)}); /* no iPhone, o mesmo toque que abre a janela às vezes caía no botão novo e fechava ela */
 function askName(title,init,cb,ph,max){
   modal(title,`<form id="nmF" style="display:flex;gap:8px"><input class="f" id="nmI" maxlength="${max||60}" placeholder="${h(ph||'Ex.: Casamento 20/11')}" value="${h(init)}" aria-label="${h(title)}"><button class="primary">Salvar</button></form>`,null,null,'Cancelar');
   $('nmF').addEventListener('submit',e=>{e.preventDefault();const v=$('nmI').value.trim();if(!v){$('nmI').focus();return}closeModal();cb(v)});
@@ -892,7 +897,7 @@ $('more').addEventListener('click',()=>{stopScroll();const pl=()=>isPlayed(cur.i
     else if(k==='fd'||k==='fu'){$(k==='fd'?'fDn':'fUp').click();$('mBody').innerHTML=html()}
     else if(k==='pl'){setPlayed(cur.id,!pl());$('ttl').textContent=(pl()?'✓ ':'')+cur.title;closeModal();toast(pl()?'Marcada como tocada':'Desmarcada')}},null,'Fechar')});
 // editar a cifra na hora (ensaio): muda o texto salvo da música; a transposição continua guardada à parte
-$('edit').addEventListener('click',()=>{stopScroll();edFrom='';cDoneArm=0;$('cDone').hidden=true;$('eRec').hidden=!(cur.recs&&cur.recs.length);if(!$('eRec').hidden){drawRecs();recUi();dictUi()}$('eTtl').textContent='Editar cifra';$('eT').value=cur.title;$('eA').value=cur.artist;$('eK').value=cur.key;$('eC').value=cur.capo||'';$('eD').value=cur.dur?mmss(cur.dur):'';$('eX').value=cur.text;
+$('edit').addEventListener('click',()=>{stopScroll();edFrom='';$('eRec').hidden=!(cur.recs&&cur.recs.length);if(!$('eRec').hidden){drawRecs();recUi();dictUi()}$('eTtl').textContent='Editar cifra';$('eT').value=cur.title;$('eA').value=cur.artist;$('eK').value=cur.key;$('eC').value=cur.capo||'';$('eD').value=cur.dur?mmss(cur.dur):'';$('eX').value=cur.text;
   $('eNote').textContent=tr?`No palco você está em ${trKey(cur.key,tr)}; aqui a cifra aparece no tom original (${cur.key||'—'}). Edite no original: a transposição continua valendo.`:'';
   $('eOrigRow').hidden=!cur.orig;$('eMeta').open=window.innerWidth>560;eSummary();$('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor()}); // no celular os dados ficam recolhidos e a cifra ocupa a tela
 // sugestões de acorde: campo harmônico do tom + acordes de fora que já aparecem na música (empréstimo modal etc.)
@@ -909,7 +914,7 @@ let chT;$('eK').addEventListener('input',drawChords);$('eX').addEventListener('i
 function closeEditor(){const wasRec=!!rec;recStop();dictStop();if(cur&&cur.fresh&&edFrom!=='comp'){const s=cur;if(!s.text||!s.text.trim()){songs=songs.filter(x=>x!==s);save();setTimeout(()=>{if(!$('stage').hidden)$('back').click()},0)}}if(edFrom==='comp'){const s=cur;if(s&&s.comp&&!wasRec&&!s.text&&!(s.recs&&s.recs.length)){songs=songs.filter(x=>x!==s);save()}edFrom='';setTimeout(drawList,0)}$('editor').hidden=true;const ed=$('editor');ed.style.top=ed.style.height=ed.style.bottom='';ed.classList.remove('kb')}
 // o editor acompanha a área visível: com o teclado aberto, a fileira de acordes fica colada em cima dele
 function fitEditor(){const ed=$('editor'),vv=window.visualViewport;if(ed.hidden||!vv)return;
-  ed.style.top=vv.offsetTop+'px';ed.style.height=vv.height+'px';ed.style.bottom='auto';ed.classList.toggle('kb',window.innerHeight-vv.height>120)}
+  ed.style.top=vv.offsetTop+'px';ed.style.height=vv.height+'px';ed.style.bottom='auto';ed.classList.toggle('kb',window.innerHeight-vv.height>120&&document.activeElement===$('eX'))}
 function fitModal(){const m=$('modal'),vv=window.visualViewport;if(!vv)return;if(m.hidden){m.style.top=m.style.height='';return}m.style.top=vv.offsetTop+'px';m.style.height=vv.height+'px';m.style.bottom='auto'} /* a janela encolhe junto com o teclado: o resultado da busca nunca fica escondido */
 if(window.visualViewport){visualViewport.addEventListener('resize',()=>{fitEditor();fitModal()});visualViewport.addEventListener('scroll',()=>{fitEditor();fitModal()})}
 // celular: a fileira de acordes vira coluna à direita do texto (dentro do app do Claude o iPhone não informa a altura do teclado)
@@ -917,9 +922,19 @@ function placeChords(){const mob=window.innerWidth<=560&&inFrame; /* fora do app
   if(mob){if($('eKb').parentNode!==col)col.prepend($('eKb'));if($('eCh').parentNode!==col)col.append($('eCh'))}
   else{if($('eCh').parentNode!==dock)dock.prepend($('eCh'));if($('eKb').parentNode!==dock)dock.append($('eKb'))}}
 window.addEventListener('resize',()=>{if(!$('editor').hidden)placeChords()});
-$('eX').addEventListener('focus',()=>{$('eKb').hidden=false;setTimeout(fitEditor,300)});
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+$('eX').addEventListener('focus',()=>{$('eKb').hidden=isIOS;setTimeout(fitEditor,300)});
 $('eX').addEventListener('blur',()=>{setTimeout(()=>{if(document.activeElement===$('eX'))return;$('eKb').hidden=true;fitEditor()},150)});
+['eT','eA','eK','eC'].forEach(id=>$(id).addEventListener('focus',()=>setTimeout(fitEditor,60)));
 $('eKb').addEventListener('pointerdown',e=>e.preventDefault());
+// setas: andam com o cursor na letra sem tirar o teclado (segurar repete)
+function moveCur(d){const x=$('eX'),v=x.value;let p=x.selectionStart??0;
+  if(d==='L')p=Math.max(0,p-1);else if(d==='R')p=Math.min(v.length,p+1);
+  else{const ls=v.lastIndexOf('\n',p-1)+1,col=p-ls;if(d==='U'){if(ls>0){const ps=v.lastIndexOf('\n',ls-2)+1;p=Math.min(ps+col,ls-1)}else p=0}else{const le=v.indexOf('\n',p);if(le>=0){const ne=v.indexOf('\n',le+1);p=Math.min(le+1+col,ne<0?v.length:ne)}else p=v.length}}
+  x.setSelectionRange(p,p);x.focus()}
+{let t1=0,t2=0;const stop=()=>{clearTimeout(t1);clearInterval(t2)};
+  $('eArr').addEventListener('pointerdown',e=>{const b=e.target.closest('[data-mv]');if(!b)return;e.preventDefault();const d=b.dataset.mv;moveCur(d);t1=setTimeout(()=>{t2=setInterval(()=>moveCur(d),70)},380)});
+  ['pointerup','pointerleave','pointercancel'].forEach(k=>$('eArr').addEventListener(k,stop))}
 $('eKb').addEventListener('click',()=>$('eX').blur()); // fecha o teclado para ver a cifra inteira
 function eSummary(){const k=$('eK').value.trim(),c=parseInt($('eC').value,10)||0;$('eSum').textContent=[$('eT').value.trim()||'Música',k?'Tom '+k:'',c?'Capo '+c:''].filter(Boolean).join(' · ')}
 ['eT','eK','eC'].forEach(id=>$(id).addEventListener('input',eSummary));
@@ -929,8 +944,7 @@ $('eSave').addEventListener('click',()=>{const fromComp=edFrom==='comp';snap(fro
   cur.title=$('eT').value.trim()||cur.title;cur.artist=$('eA').value.trim();cur.key=$('eK').value.trim();cur.text=x;
   cur.capo=Math.max(0,Math.min(12,parseInt($('eC').value,10)||0));cur.dur=parseDur($('eD').value);
   if(cur.orig!=null&&x===cur.orig)delete cur.orig;
-  const fin=fromComp&&finishing;finishing=false;if(fin){delete cur.comp;delete cur.dur;cur.fin=Date.now();songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'))}
-  if(fromComp)cur.mt=Date.now();delete cur.fresh;save();closeEditor();if(fromComp){drawList();toast(fin?`"${cur.title}" foi para a Biblioteca`:'Ideia salva',1);if(fin){const s=cur;setTimeout(()=>askSpotify(s),900)}return}const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
+  if(fromComp)cur.mt=Date.now();delete cur.fresh;save();closeEditor();if(fromComp){drawList();toast('Ideia salva',1);return}const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast('Cifra salva',1)});
 let origArm=0;$('eOrig').addEventListener('click',()=>{if(Date.now()-origArm<3000){$('eX').value=cur.orig;toast('Texto original de volta. Toque em Salvar para confirmar')}else{origArm=Date.now();toast('Toque de novo para restaurar')}});
 // teclado do computador: ← → trocam de música, Esc volta à lista
 document.addEventListener('keydown',e=>{if($('stage').hidden||!$('editor').hidden||!$('modal').hidden||/INPUT|TEXTAREA/.test(e.target.tagName))return;
@@ -943,16 +957,8 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('stage
 let tt;function toast(m,canUndo){const t=$('toast');t.textContent=m;if(canUndo&&undoSt.length){const b=document.createElement('button');b.className='tundo';b.textContent='Desfazer';b.addEventListener('click',e=>{e.stopPropagation();t.hidden=true;undo()});t.append(b)}t.hidden=false;clearTimeout(tt);tt=setTimeout(()=>t.hidden=true,canUndo?6000:2800)}
 
 /* ---------- composição: ideias com letra, gravações (neste aparelho) e ditado ---------- */
-let edFrom='',finishing=false,cDoneArm=0;
-// composição nova na Biblioteca: fica sem música do Spotify até você dizer qual é (ou nunca, se não estiver lá)
-function askSpotify(s){if(!window.calistoSpotify)return;modal('Já está no Spotify?',`<p class="spnote">"${h(s.title)}" é composição sua. Por enquanto ela fica <b>sem música do Spotify</b> nas playlists, e o app não inventa nenhuma.</p>
-  <button class="big" data-a="no"><span>Ainda não: deixar sem vínculo</span><span>›</span></button><button class="big" data-a="yes"><span>Já está: procurar e vincular</span><span>›</span></button>`,
-  e=>{const a=e.target.closest('[data-a]');if(!a)return;closeModal();if(a.dataset.a==='yes')calistoSpotify.vincular(s);else toast('Sem vínculo. Dá para vincular depois em Conferir → Trocar.')},null,'Depois')}
-// finalizar: a ideia vira música da Biblioteca (com letra, gravações e tudo); antes disso ela fica só na Composição
-document.addEventListener('click',e=>{if(e.target.id!=='cDone')return;const b=e.target;
-  if(Date.now()-cDoneArm>3000){cDoneArm=Date.now();b.textContent='Toque de novo: vai para a Biblioteca';return}
-  if(!$('eX').value.trim()){toast('Escreva a letra ou a cifra antes de finalizar');return}
-  finishing=true;$('eSave').click()});
+let edFrom='';
+
 const ADB={p:null,open(){return this.p||(this.p=new Promise((ok,no)=>{const r=indexedDB.open('calisto-audio',1);r.onupgradeneeded=()=>r.result.createObjectStore('rec');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}))},
   async tx(mode,fn){const d=await this.open();return new Promise((ok,no)=>{const t=d.transaction('rec',mode);const q=fn(t.objectStore('rec'));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error)})},
   put(k,v){return this.tx('readwrite',o=>o.put(v,k))},get(k){return this.tx('readonly',o=>o.get(k))},del(k){return this.tx('readwrite',o=>o.delete(k))}};
@@ -961,17 +967,17 @@ function newIdea(rec){const d=new Date(),p=n=>String(n).padStart(2,'0');const s=
   songs.push(s);save();openIdea(s.id,rec)}
 function openIdea(id,rec){const s=songs.find(x=>x.id===id);if(!s)return;cur=s;edFrom='comp';tr=0;
   $('eTtl').textContent='Composição';$('eT').value=s.title;$('eA').value=s.artist||'';$('eK').value=s.key||'';$('eC').value=s.capo||'';$('eD').value=s.dur?mmss(s.dur):'';$('eX').value=s.text||'';
-  $('eNote').textContent='';$('eOrigRow').hidden=true;$('eMeta').open=false;eSummary();$('eRec').hidden=false;$('cDone').hidden=false;cDoneArm=0;$('cDone').textContent='✓ Finalizar';drawRecs();recUi();dictUi();
+  $('eNote').textContent='';$('eOrigRow').hidden=true;$('eMeta').open=false;eSummary();$('eRec').hidden=false;drawRecs();recUi();dictUi();
   $('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor();if(rec)recStart()}
 $('newIdea').addEventListener('click',()=>newIdea(false));$('recIdea').addEventListener('click',()=>newIdea(true));
-let rec=null;const REC_GAIN=3.2; /* +10 dB depois do compressor; o limitador segura os picos */
+let rec=null;const REC_GAIN=5; /* +14 dB depois do compressor; o limitador segura os picos */
 async function recStart(){if(rec)return;if(!navigator.mediaDevices||!window.MediaRecorder){toast('Este navegador não grava áudio.');return}
   dictStop();setSession('play-and-record');
   const AC=window.AudioContext||window.webkitAudioContext,rac=AC?new AC():null; /* criado no toque: o iPhone exige */
   try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
     let out=st;
     if(rac){try{await rac.resume();const src=rac.createMediaStreamSource(st),cp=rac.createDynamicsCompressor(),g=rac.createGain(),lim=rac.createDynamicsCompressor(),dst=rac.createMediaStreamDestination();
-      cp.threshold.value=-30;cp.knee.value=10;cp.ratio.value=4;cp.attack.value=.004;cp.release.value=.25;g.gain.value=REC_GAIN;
+      cp.threshold.value=-34;cp.knee.value=10;cp.ratio.value=5;cp.attack.value=.004;cp.release.value=.25;g.gain.value=REC_GAIN;
       lim.threshold.value=-2;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.1;
       src.connect(cp).connect(g).connect(lim).connect(dst);out=dst.stream}catch(e){console.warn('ganho',e)}}
     const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(m=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||'';

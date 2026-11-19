@@ -71,9 +71,11 @@ function bate(a, b) { // o nome da faixa do Spotify confere com o da cifra?
   return B.filter(w => A.has(w)).length / Math.max(A.size, B.length) >= 0.6;
 }
 // composições suas (feitas na aba Composição) e músicas marcadas "não está no Spotify" ficam sem vínculo até você escolher uma faixa
-const semSpotify = s => !!((s.sp && s.sp.none) || ((s.fin || s.comp) && !(s.sp && s.sp.uri)));
-async function acha(s) {
-  if (s.sp && s.sp.uri) return { uri: s.sp.uri, duration_ms: 0, escolhida: true }; // versão que você escolheu no Spotify
+const vSet = (p, s) => p && p.spv && p.spv[s.id]; // versão escolhida só para esta playlist
+const semSpotify = (s, p) => { const v = vSet(p, s); if (v) return !!v.none; return !!((s.sp && s.sp.none) || ((s.fin || s.comp) && !(s.sp && s.sp.uri))); };
+async function acha(s, p) {
+  const vs = vSet(p, s); if (vs && vs.uri) return { uri: vs.uri, duration_ms: vs.ms || 0, escolhida: true };
+  if (s.sp && s.sp.uri) return { uri: s.sp.uri, duration_ms: s.sp.ms || 0, escolhida: true }; // versão que você escolheu no Spotify
   const t = limpa(s.title), a = String(s.artist || '').split(/[,/&]| e | feat\.? /i)[0].trim();
   const partes = t.includes('+') ? t.split('+').map(x => x.trim()).filter(Boolean) : [t]; // "Marcha Nupcial + No Fundo do Coração": tenta a 1ª parte
   const tentativas = [];
@@ -132,7 +134,7 @@ async function aprender(p, atual) {
     }
     if (plano.length) {
       app.snap('trocas lidas do Spotify', refazer(p.id));
-      for (const [m, s, t] of plano) { s.sp = { uri: t.uri, nome: t.name, art: artistas(t) }; m.uri = t.uri; feitas.push(`${s.title} → ${t.name} (${artistas(t)})`); }
+      for (const [m, s, t] of plano) { p.spv = p.spv || {}; p.spv[s.id] = { uri: t.uri, nome: t.name, art: artistas(t), ms: t.duration_ms || 0 }; s.dur = t.duration_ms ? Math.round(t.duration_ms / 1000) : s.dur; m.uri = t.uri; feitas.push(`${s.title} → ${t.name} (${artistas(t)})`); }
       app.save();
     }
   } catch (e) { console.warn('Calisto spotify: não deu para ler a playlist', e); }
@@ -155,14 +157,14 @@ async function conferir(p) {
   const linhas = p.items.map((id, i) => {
     const s = by[id]; if (!s) return '';
     const m = (p.spotify.map || []).find(x => x.song === id), t = m && porUri[m.uri];
-    const faixa = fora.has(id) ? '<i>fora do Spotify neste set</i>' : semSpotify(s) ? '<i>sem música no Spotify</i>' : t ? `${escH(t.name)} — ${escH(artistas(t))}` : m ? '<i>não está mais na playlist</i>' : '<i>não achei no Spotify</i>';
+    const faixa = fora.has(id) ? '<i>fora do Spotify neste set</i>' : semSpotify(s, p) ? '<i>sem música no Spotify</i>' : t ? `${escH(t.name)} — ${escH(artistas(t))}` : m ? '<i>não está mais na playlist</i>' : '<i>não achei no Spotify</i>';
     return `<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
-      <div style="flex:1;min-width:0"><div style="font-weight:600">${i + 1}. ${escH(s.title)}${s.sp && !fora.has(id) ? ' <span title="Versão escolhida por você" style="color:#1ed760">●</span>' : ''}</div>
+      <div style="flex:1;min-width:0"><div style="font-weight:600">${i + 1}. ${escH(s.title)}${fora.has(id) ? '' : vSet(p, s) ? ' <span title="Versão só desta playlist" style="color:#1ed760">◐</span>' : s.sp ? ' <span title="Versão escolhida por você para todas as playlists" style="color:#1ed760">●</span>' : ''}</div>
       <div style="color:var(--muted);font-size:.82rem">${faixa}</div></div>
       <button class="mini" data-troca="${escH(id)}">Trocar</button></div>`;
   }).join('');
   app.modal('Conferir no Spotify', `${avisoTrocas(feitas)}
-    <p style="color:var(--muted);margin:0 0 6px;font-size:.85rem">● = versão escolhida por você. Ela vale para essa música em todos os sets.</p>${linhas}`,
+    <p style="color:var(--muted);margin:0 0 6px;font-size:.85rem">● = versão sua para todas as playlists · ◐ = versão só desta playlist.</p>${linhas}`,
   e => { const b = e.target.closest('[data-troca]'); if (b) escolher(p, by[b.dataset.troca]); }, null, 'Fechar');
   if (feitas.length) app.toast(`${feitas.length} troca${feitas.length > 1 ? 's' : ''} do Spotify guardada${feitas.length > 1 ? 's' : ''}`, 1);
 }
@@ -176,6 +178,7 @@ async function escolher(p, s) {
   app.modal(`Versão de "${s.title}"`, `<form id="spBusca" style="display:flex;gap:6px;margin:0 0 8px">
       <input id="spQ" type="search" enterkeyhint="search" autocomplete="off" value="${escH((t + ' ' + a).trim())}" placeholder="Buscar no Spotify" style="flex:1;min-width:0;font-size:16px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:inherit">
       <button class="mini" type="submit" style="padding:0 14px">Buscar</button></form>
+    ${p ? `<label style="display:flex;gap:8px;align-items:center;margin:0 0 8px;font-size:.92rem"><input type="checkbox" id="spSet" ${vSet(p, s) ? 'checked' : ''} style="width:20px;height:20px"> Só nesta playlist <small style="color:var(--muted)">(sem marcar, vale para todas)</small></label>` : ''}
     <p style="color:var(--muted);margin:0 0 6px;font-size:.85rem">Escreva o que quiser (música, banda, "ao vivo", nome do show). Toque na versão certa: a playlist é atualizada e o link continua o mesmo.</p>
     <div id="spRes"><p style="color:var(--muted)">Procurando…</p></div>
     ${s.sp ? '<button class="big" data-v="auto" style="color:var(--muted)">Voltar para a escolha automática <span>›</span></button>' : ''}
@@ -184,11 +187,12 @@ async function escolher(p, s) {
   e => { const b = e.target.closest('[data-v]'); if (!b) return;
     const v = b.dataset.v;
     app.snap(v === 'out' ? `tirar "${s.title}" do Spotify` : v === 'in' ? `voltar "${s.title}" ao Spotify` : `versão de "${s.title}"`, p ? refazer(p.id) : null);
-    if (v === 'auto') delete s.sp;
-    else if (v === 'none') s.sp = { none: true };
+    const soSet = p && document.getElementById('spSet') && document.getElementById('spSet').checked;
+    if (v === 'auto') { delete s.sp; if (p && p.spv) delete p.spv[s.id]; }
+    else if (v === 'none') { if (soSet) { p.spv = p.spv || {}; p.spv[s.id] = { none: true }; } else s.sp = { none: true }; }
     else if (v === 'out') p.spSkip = [...new Set([...(p.spSkip || []), s.id])];
     else if (v === 'in') { p.spSkip = (p.spSkip || []).filter(x => x !== s.id); if (!p.spSkip.length) delete p.spSkip; }
-    else { const x = op[+v]; s.sp = { uri: x.uri, nome: x.name, art: artistas(x) }; if (!s.dur && x.duration_ms) s.dur = Math.round(x.duration_ms / 1000); }
+    else { const x = op[+v], esc2 = { uri: x.uri, nome: x.name, art: artistas(x), ms: x.duration_ms || 0 }; if (soSet) { p.spv = p.spv || {}; p.spv[s.id] = esc2; } else { s.sp = esc2; if (p && p.spv) delete p.spv[s.id]; } if (x.duration_ms) s.dur = Math.round(x.duration_ms / 1000); }
     app.save(); app.close(); if (p) create(p, { semAprender: true }).then(() => {}); else app.toast(v === 'none' ? 'Fica sem música do Spotify' : 'Vínculo guardado: vale para todas as playlists'); }, null, 'Cancelar');
   const res = document.getElementById('spRes');
   async function busca(qs, filtra) {
@@ -205,12 +209,23 @@ async function escolher(p, s) {
 }
 
 let rodando = false;
+function perguntaVinculo(p, novas) {
+  app.modal('Composições sem Spotify', `<p style="margin:0 0 10px">${novas.length === 1 ? 'Esta música é composição sua e não tem' : 'Estas músicas são composições suas e não têm'} música do Spotify ligada:</p>
+    ${novas.map(s => `<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)"><b style="flex:1;min-width:0">${escH(s.title)}</b><button class="mini" data-vinc="${escH(s.id)}">Procurar</button></div>`).join('')}
+    <p style="color:var(--muted);margin:10px 0">Sem vínculo, ela fica de fora da playlist do Spotify e o app não inventa nenhuma faixa.</p>
+    <button class="big" data-a="sem">Montar sem elas <span>›</span></button>`,
+  e => { const b = e.target.closest('[data-vinc]'); if (b) { escolher(p, novas.find(s => s.id === b.dataset.vinc)); return; }
+    if (e.target.closest('[data-a="sem"]')) { novas.forEach(s => { s.sp = { none: true }; }); app.save(); app.close(); create(p, { jaPerguntou: true }); } }, null, 'Cancelar');
+}
 // depois de um Desfazer: manda o set de volta ao Spotify como estava (espera se ainda estiver enviando)
 const refazer = id => () => { const go = () => { if (rodando) return setTimeout(go, 500); const q = app.state().pls.find(x => x.id === id); if (q) create(q, { semAprender: true }); }; go(); };
 async function create(p, opt = {}) {
   if (rodando) return; if (!p.items.length) { app.toast('Playlist vazia'); return; }
   if (!(await access())) { connect(p.id); return; }
   if (p.spotify && p.spotify.id && !/playlist-read-private/.test(tok.s || '')) { connect(p.id); return; } // precisa da permissão nova uma vez
+  // composições suas ainda sem decisão: pergunta antes de montar (uma vez por música)
+  if (!opt.jaPerguntou) { const S0 = app.state(), novas = p.items.map(id => S0.songs.find(x => x.id === id)).filter(s => s && (s.fin || s.comp) && !s.sp && !vSet(p, s));
+    if (novas.length) { perguntaVinculo(p, novas); return; } }
   const aprendeu = opt.semAprender ? [] : await aprender(p);
   rodando = true;
   const S = app.state(), by = Object.fromEntries(S.songs.map(s => [s.id, s]));
@@ -220,11 +235,11 @@ async function create(p, opt = {}) {
     for (const id of alvo) {
       const s = by[id];
       app.toast(`Procurando no Spotify… ${++i}/${alvo.length}`);
-      if (semSpotify(s)) { semV.push(s.title); continue; }
-      const it = await acha(s);
+      if (semSpotify(s, p)) { semV.push(s.title); if (s.dur) { delete s.dur; durs++; } continue; }
+      const it = await acha(s, p);
       if (!it) { miss.push(s.title); continue; }
       uris.push(it.uri); mapa.push({ song: id, uri: it.uri });
-      if (!s.dur && it.duration_ms) { s.dur = Math.round(it.duration_ms / 1000); durs++; }
+      if (it.duration_ms) { const d = Math.round(it.duration_ms / 1000); if (s.dur !== d) { s.dur = d; durs++; } } // a duração vem só do Spotify
     }
     if (aprendeu.length) app.toast('Trocas do Spotify guardadas', 1);
     if (!uris.length) { app.toast('Não achei nenhuma dessas músicas no Spotify.'); return; }
@@ -249,6 +264,6 @@ async function create(p, opt = {}) {
   } finally { rodando = false; }
 }
 
-async function vincular(s) { if (!(await access())) { connect(null); return; } escolher(null, s); }
+async function vincular(s) { /* usado de fora */ if (!(await access())) { connect(null); return; } escolher(null, s); }
 window.calistoSpotify = { create, conferir, vincular, connected: () => !!tok, connect: () => connect(null), disconnect: () => { keep(tok = null); app.redraw(); } };
 app.redraw();
