@@ -1,5 +1,5 @@
 // Calisto · funciona sem internet. Gerado por montar-site.py (não editar à mão).
-const CACHE='calisto-e49e6b7669';
+const CACHE='calisto-376422999e';
 const APP=["./", "index.html", "sync.js", "spotify.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/icon-maskable-512.png"];
 const FB=['app','auth','firestore'].map(m=>'https://www.gstatic.com/firebasejs/10.12.2/firebase-'+m+'.js');
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP))
