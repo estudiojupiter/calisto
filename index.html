@@ -232,6 +232,19 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 /* ---- duas colunas (iPad e computador) ---- */
 @media (min-width:900px){#sheet.cols .chart{column-count:2;column-gap:3em;column-rule:1px solid var(--line)}#sheet.cols .chart .s{break-after:avoid}}
 @media (max-width:899px){.wide{display:none!important}}
+
+/* ---- tour guiado ---- */
+#coach{position:fixed;inset:0;z-index:60}
+#coach.busy .ccard,#coach.busy .carrow{opacity:0}
+.chole{position:fixed;border-radius:12px;box-shadow:0 0 0 200vmax rgba(5,6,10,.74);outline:2.5px solid var(--accent);outline-offset:2px;transition:all .28s ease;pointer-events:none}
+.chole::after{content:"";position:absolute;inset:-8px;border-radius:16px;border:2px solid var(--accent);opacity:0;animation:cpulse 1.6s ease-out infinite}
+@keyframes cpulse{0%{opacity:.7;transform:scale(.96)}100%{opacity:0;transform:scale(1.08)}}
+.carrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;color:var(--accent);overflow:visible;transition:opacity .2s}
+.ccard{position:fixed;width:min(340px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px 14px 12px;box-shadow:0 12px 40px rgba(0,0,0,.6);transition:opacity .2s,left .28s ease,top .28s ease}
+#cTtl{display:block;font-size:1.05rem;margin-bottom:4px}.ccard p{margin:0 0 12px;color:var(--ink);line-height:1.5;font-size:.93rem}
+.cdots{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}.cdots i{width:6px;height:6px;border-radius:50%;background:var(--line)}.cdots i.on{background:var(--accent)}
+.cnav{display:flex;gap:6px;align-items:center}.cnav .primary{min-height:38px}
+@media (prefers-reduced-motion:reduce){.chole,.ccard{transition:none}.chole::after{animation:none}}
 /* ---- tutorial ---- */
 .tour p{margin:0 0 12px;line-height:1.55}.tour .dots{display:flex;gap:5px;margin:4px 0 14px}.tour .dots i{width:7px;height:7px;border-radius:50%;background:var(--line)}.tour .dots i.on{background:var(--accent)}
 .tour .nav{display:flex;gap:8px}.tour .nav .primary{flex:1}
@@ -904,15 +917,21 @@ function openIdea(id,rec){const s=songs.find(x=>x.id===id);if(!s)return;cur=s;ed
   $('eNote').textContent='';$('eOrigRow').hidden=true;$('eMeta').open=false;eSummary();$('eRec').hidden=false;drawRecs();recUi();dictUi();
   $('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor();if(rec)recStart()}
 $('newIdea').addEventListener('click',()=>newIdea(false));$('recIdea').addEventListener('click',()=>newIdea(true));
-let rec=null;
+let rec=null;const REC_GAIN=3.2; /* +10 dB depois do compressor; o limitador segura os picos */
 async function recStart(){if(rec)return;if(!navigator.mediaDevices||!window.MediaRecorder){toast('Este navegador não grava áudio.');return}
   dictStop();setSession('play-and-record');
-  try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}});
+  const AC=window.AudioContext||window.webkitAudioContext,rac=AC?new AC():null; /* criado no toque: o iPhone exige */
+  try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    let out=st;
+    if(rac){try{await rac.resume();const src=rac.createMediaStreamSource(st),cp=rac.createDynamicsCompressor(),g=rac.createGain(),lim=rac.createDynamicsCompressor(),dst=rac.createMediaStreamDestination();
+      cp.threshold.value=-30;cp.knee.value=10;cp.ratio.value=4;cp.attack.value=.004;cp.release.value=.25;g.gain.value=REC_GAIN;
+      lim.threshold.value=-2;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.1;
+      src.connect(cp).connect(g).connect(lim).connect(dst);out=dst.stream}catch(e){console.warn('ganho',e)}}
     const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(m=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||'';
-    const mr=new MediaRecorder(st,mime?{mimeType:mime}:{});const r={mr,chunks:[],t0:Date.now(),st,song:cur};
+    const mr=new MediaRecorder(out,mime?{mimeType:mime}:{});const r={mr,chunks:[],t0:Date.now(),st,rac,song:cur};
     mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};mr.onstop=()=>recSave(r);mr.start(1000);rec=r;r.timer=setInterval(recUi,250);recUi()}
-  catch(e){toast('Sem acesso ao microfone. Libere o microfone para o Calisto e tente de novo.')}}
-function recStop(){if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);try{r.mr.stop()}catch(e){}r.st.getTracks().forEach(t=>t.stop());recUi()}
+  catch(e){try{rac&&rac.close().catch(()=>{})}catch(_){}toast('Sem acesso ao microfone. Libere o microfone para o Calisto e tente de novo.')}}
+function recStop(){if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);try{r.mr.stop()}catch(e){}r.st.getTracks().forEach(t=>t.stop());setTimeout(()=>{try{r.rac&&r.rac.state!=='closed'&&r.rac.close().catch(()=>{})}catch(_){}},800);recUi()}
 async function recSave(r){const blob=new Blob(r.chunks,{type:r.mr.mimeType||r.chunks[0]&&r.chunks[0].type||'audio/mp4'});if(!blob.size){toast('A gravação saiu vazia.');return}
   const id=uid(),dur=Math.max(1,Math.round((Date.now()-r.t0)/1000)),s=r.song;
   try{await ADB.put(id,blob)}catch(e){toast('Não deu para guardar o áudio neste aparelho.');return}
@@ -925,45 +944,43 @@ async function recMenu(s,r){let blob=null;try{blob=await ADB.get(r.id)}catch(e){
   const url=blob?URL.createObjectURL(blob):'';
   const html=()=>`${blob?`<audio controls src="${url}" style="width:100%;margin:2px 0 10px"></audio>`:'<p class="spnote">Este áudio foi gravado em outro aparelho e está guardado só lá.</p>'}
     <div class="row" style="margin-bottom:8px"><input class="f" id="rName" value="${h(r.name)}" aria-label="Nome da gravação" style="flex:1;min-width:0"><button class="mini" data-a="ren">Renomear</button></div>
-    ${blob?`<button class="big" data-a="tr"><span>Transcrever para a letra <small style="color:var(--muted)">(beta)</small></span><span>›</span></button><div id="trBox" hidden><div class="prog"><i id="trBar"></i></div><p class="spnote" id="trMsg" style="margin-top:6px"></p></div>
-    <button class="big" data-a="share"><span>Compartilhar ou salvar o áudio</span><span>›</span></button>`:''}
+    ${blob?`<button class="big" data-a="share"><span>Compartilhar ou salvar o áudio</span><span>›</span></button>`:''}
     <button class="big" data-a="del" style="color:var(--danger)"><span>Apagar gravação</span><span></span></button>`;
   modal(r.name,html(),async e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
     if(k==='ren'){const v=$('rName').value.trim();if(v){r.name=v;save();drawRecs();$('mTtl').textContent=v;toast('Renomeada')}}
     else if(k==='share'){const ext=/mp4|m4a/.test(blob.type)?'m4a':'webm',file=new File([blob],`${s.title} - ${r.name}.${ext}`.replace(/[\\/:*?"<>|]/g,'-'),{type:blob.type});
       if(navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({files:[file],title:r.name}).catch(()=>{});
       else{const l=document.createElement('a');l.href=url;l.download=file.name;document.body.append(l);l.click();l.remove()}}
-    else if(k==='tr'){a.disabled=true;transcribe(blob).then(t=>{if(!t){$('trMsg').textContent='Não entendi palavras nessa gravação.';a.disabled=false;return}
-        const x=$('eX');x.value=(x.value.replace(/\s+$/,'')+(x.value.trim()?'\n\n':'')+t.replace(/([.!?])\s+/g,'$1\n')).trimStart()+'\n';x.dispatchEvent(new Event('input'));closeModal();toast('Transcrição colocada no fim da letra. Revise e salve.')})
-      .catch(err=>{console.warn(err);$('trMsg').textContent='Não deu para transcrever agora. Confira a internet (na primeira vez ele baixa o reconhecimento de voz) e tente de novo.';a.disabled=false})}
     else if(k==='del'){if(!(a.dataset.arm&&Date.now()-a.dataset.arm<3000)){a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar';return}
       s.recs=s.recs.filter(x=>x!==r);save();try{await ADB.del(r.id)}catch(_){}closeModal();drawRecs();toast('Gravação apagada')}},()=>{if(url)URL.revokeObjectURL(url)},'Fechar')}
-// transcrição: reconhecimento de voz (Whisper) rodando no próprio aparelho; baixa ~80 MB na primeira vez e fica guardado
-let asrP=null;
-function asrLoad(onp){return asrP||(asrP=(async()=>{const T=await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2');T.env.allowLocalModels=false;
-  return T.pipeline('automatic-speech-recognition','Xenova/whisper-base',{progress_callback:onp})})().catch(e=>{asrP=null;throw e}))}
-async function pcm16k(blob){const AC=window.AudioContext||window.webkitAudioContext,ac=new AC(),ab=await blob.arrayBuffer();
-  const buf=await new Promise((ok,no)=>ac.decodeAudioData(ab,ok,no));try{ac.state!=='closed'&&ac.close().catch(()=>{})}catch(_){}
-  const off=new OfflineAudioContext(1,Math.max(1,Math.ceil(buf.duration*16000)),16000),src=off.createBufferSource();src.buffer=buf;src.connect(off.destination);src.start();return (await off.startRendering()).getChannelData(0)}
-async function transcribe(blob){const box=$('trBox'),bar=$('trBar'),msg=$('trMsg');box.hidden=false;const files={};
-  const step=(p,t)=>{if(bar)bar.style.width=Math.round(p*100)+'%';if(msg)msg.textContent=t};
-  step(.02,'Preparando o áudio…');const pcm=await pcm16k(blob);
-  step(.05,asrP?'Carregando o reconhecimento de voz…':'Baixando o reconhecimento de voz (~80 MB, só na primeira vez)…');
-  const asr=await asrLoad(p=>{if(p.status==='progress'&&p.total){files[p.file]=[p.loaded,p.total];let L=0,T=0;for(const k in files){L+=files[k][0];T+=files[k][1]}step(.05+.6*L/T,`Baixando o reconhecimento de voz… ${Math.round(L/1048576)} de ${Math.round(T/1048576)} MB`)}});
-  step(.7,'Ouvindo a gravação e escrevendo… (pode levar um pouco)');
-  const out=await asr(pcm,{language:'portuguese',task:'transcribe',chunk_length_s:30,stride_length_s:5});step(1,'Pronto');
-  return String((out&&out.text)||'').trim()}
 // ditado ao vivo (reconhecimento de fala do aparelho, quando existe)
 let dict=null;
 function dictUi(){$('dBtn').classList.toggle('on',!!dict);$('dBtn').textContent=dict?'■ Parar ditado':'🎙 Ditar letra'}
-function dictStop(){if(!dict)return;const d=dict;dict=null;try{d.stop()}catch(e){}dictUi()}
+function dictStop(){if(!dict)return;const d=dict;dict=null;ds=null;try{d.stop()}catch(e){}dictUi()}
+// o texto aparece enquanto você fala; cada pausa vira uma linha; dá para editar junto (o ditado continua de onde está o cursor)
+// comandos falados: "nova linha", "nova estrofe", "vírgula", "ponto final", "interrogação", "exclamação"
+let ds=null;
+function dictFmt(parts){return parts.map(t=>t.trim()).filter(Boolean).join('\n')
+  .replace(/\s*\b(nova estrofe|par[áa]grafo)\b\s*/gi,'\n\n').replace(/\s*\b(nova linha|pr[óo]xima linha|pula linha)\b\s*/gi,'\n')
+  .replace(/\s*\bv[íi]rgula\b/gi,',').replace(/\s*\bponto final\b/gi,'.').replace(/\s*\b(ponto de )?interroga[çc][ãa]o\b/gi,'?').replace(/\s*\b(ponto de )?exclama[çc][ãa]o\b/gi,'!')
+  .replace(/[ \t]+\n/g,'\n').replace(/\n{3,}/g,'\n\n')}
+function dictCommit(){if(!ds)return;const x=$('eX');ds.start=x.selectionStart??x.value.length;ds.len=0;ds.from=ds.seen;ds.lead=ds.start>0&&x.value[ds.start-1]!=='\n'}
+$('eX').addEventListener('input',e=>{if(e.isTrusted&&ds)dictCommit()});
+$('eX').addEventListener('pointerup',()=>{if(ds)setTimeout(dictCommit,0)});
 $('dBtn').addEventListener('click',()=>{if(dict){dictStop();return}const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){toast('Ditado ao vivo não existe neste navegador. Use o microfone do teclado do aparelho (🎤 ao lado do espaço).');$('eX').focus();return}
-  recStop();const r=new SR();r.lang='pt-BR';r.continuous=true;r.interimResults=false;
-  r.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal){const x=$('eX'),t=e.results[i][0].transcript.trim();if(!t)continue;const a=x.selectionStart??x.value.length,b=x.selectionEnd??a;x.setRangeText(t+'\n',a,b,'end');x.dispatchEvent(new Event('input'))}};
-  r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Libere o microfone e o reconhecimento de fala para o Calisto.')};
-  r.onend=()=>{if(dict===r){try{r.start()}catch(_){dict=null;dictUi()}}}; /* o Safari para sozinho de vez em quando: continua até você tocar em Parar */
-  try{r.start();dict=r;dictUi();toast('Pode cantar ou falar a letra')}catch(e){toast('Não deu para começar o ditado.')}});
+  recStop();const x=$('eX');
+  ds={start:x.selectionStart??x.value.length,len:0,from:0,seen:0};ds.lead=ds.start>0&&x.value[ds.start-1]!=='\n';
+  const mk=()=>{const rr=new SR();rr.lang='pt-BR';rr.continuous=true;rr.interimResults=true;
+    rr.onresult=e=>{if(dict!==rr||!ds)return;ds.seen=e.results.length;const parts=[];for(let i=ds.from;i<e.results.length;i++)parts.push(e.results[i][0].transcript);
+      let t=dictFmt(parts);if(t&&ds.lead)t='\n'+t;x.setRangeText(t,ds.start,ds.start+ds.len,'end');ds.len=t.length;x.dispatchEvent(new Event('input'));
+      if(document.activeElement!==x){const lh=parseFloat(getComputedStyle(x).lineHeight)||20,ln=x.value.slice(0,ds.start+ds.len).split('\n').length;x.scrollTop=Math.max(0,ln*lh-x.clientHeight/2)}};
+    rr.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){toast('Libere o microfone e o reconhecimento de fala para o Calisto.');dictStop()}};
+    rr.onend=()=>{if(dict!==rr||!ds)return; /* o Safari encerra sozinho de vez em quando: o que foi escrito fica e o ditado continua de onde parou */
+      ds.start+=ds.len;ds.len=0;ds.from=0;ds.seen=0;ds.lead=ds.start>0&&x.value[ds.start-1]!=='\n';const nx=mk();dict=nx;try{nx.start()}catch(_){dict=null;ds=null;dictUi()}};
+    return rr};
+  const r=mk();
+  try{r.start();dict=r;dictUi();toast('Pode falar ou cantar. Pausas viram linhas; diga "nova linha" ou "vírgula" se quiser.')}catch(e){ds=null;toast('Não deu para começar o ditado.')}});
 
 /* ---------- ferramentas: abas Afinador · Metrônomo · Diapasão ---------- */
 let oac=null;
@@ -1024,23 +1041,64 @@ dpDraw();
 $('cols').addEventListener('click',()=>{ui.cols=ui.cols===false;store.set('ui',ui);const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;toast(ui.cols!==false?'Duas colunas':'Uma coluna')});
 
 /* ---------- tutorial (discreto: "?" no topo; oferecido uma vez no primeiro uso) ---------- */
-const TOUR=[
- ['Bem-vindo ao Calisto','Cifras, playlists e palco num app só, que funciona sem internet. São 9 passos curtos. Dá para pular quando quiser.'],
- ['♪ Biblioteca','Todas as suas músicas, com o total no topo. Busque por nome ou artista. Arraste uma música para a esquerda para apagar. Para trazer cifras do OnSong, use <b>Importar cifras</b>.'],
- ['☰ Playlists','Um set para cada show. Dentro da playlist: <b>▶ Tocar</b>, <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b> (arquivar, PDF, Spotify).'],
- ['No palco','Encoste na letra para pausar ou continuar a rolagem. <b>♭ ♯</b> mudam o tom e <b>− +</b> a velocidade. As setas de baixo passam de música. Segure numa linha para criar uma nota ou um marca-texto.'],
- ['Editar na hora','No <b>⋯</b> (ou em <b>✎ Editar</b> no computador) você corrige a cifra. Acima do teclado ficam os acordes da música e, arrastando para o lado, o campo harmônico.'],
- ['✎ Composição','Suas ideias num lugar só: <b>Gravar agora</b> registra a melodia na hora, <b>Ditar letra</b> escreve enquanto você canta e cada gravação pode virar texto em <b>Transcrever</b>.'],
- ['♮ Afinador','Afinador, metrônomo (batida forte onde você quiser, ou nenhuma) e diapasão com as 12 notas. O metrônomo continua tocando quando você volta para a cifra.'],
- ['◉ Spotify e Desfazer','Mande qualquer playlist para o Spotify e escolha a versão de cada música. Errou? Toque em <b>Desfazer</b> no aviso de baixo, ou use Cmd+Z no computador.'],
- ['☁︎ Sua conta','Entre na sua conta para guardar tudo na nuvem e usar no celular, no iPad e no computador. Este tour fica no <b>?</b> do topo.']];
-function tour(i){i=Math.max(0,Math.min(TOUR.length-1,i||0));const [t,x]=TOUR[i],last=i===TOUR.length-1;
-  modal(t,`<div class="tour"><div class="dots">${TOUR.map((_,k)=>`<i class="${k===i?'on':''}"></i>`).join('')}</div><p>${x}</p><div class="nav">${i?'<button data-t="-1">Voltar</button>':''}<button class="primary" data-t="${last?'end':'1'}">${last?'Começar a usar':'Próximo'}</button></div></div>`,
-  e=>{const b=e.target.closest('[data-t]');if(!b)return;if(b.dataset.t==='end')closeModal();else tour(i+ +b.dataset.t)},null,last?'Fechar':'Pular')}
-$('helpBtn').addEventListener('click',()=>tour(0));
+/* tour guiado: abre as telas de verdade e aponta cada função com caixa de destaque e seta */
+const coach=document.createElement('div');coach.id='coach';coach.hidden=true;
+coach.innerHTML='<div class="chole" id="cHole"></div><svg class="carrow" id="cArr" aria-hidden="true"><defs><marker id="cTip" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs><path id="cPath" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" marker-end="url(#cTip)"/></svg><div class="ccard" id="cCard" role="dialog" aria-live="polite"><div class="cdots" id="cDots"></div><b id="cTtl"></b><p id="cTxt"></p><div class="cnav"><button class="mini" id="cSkip">Sair do tour</button><span style="flex:1"></span><button class="mini" id="cPrev">Voltar</button><button class="primary" id="cNext">Próximo</button></div></div>';
+document.body.append(coach);
+const wait=ms=>new Promise(ok=>setTimeout(ok,ms));
+const firstSong=()=>{const L=songs.filter(s=>!s.comp).sort((a,b)=>a.title.localeCompare(b.title,'pt'));return L[0]};
+const toLib=v=>{if(!$('editor').hidden)closeEditor();if(!$('stage').hidden)$('back').click();if(!$('tuner').hidden)tunerClose();if(!$('modal').hidden)closeModal();view=v;drawList();$('list').scrollTop=0;window.scrollTo(0,0)};
+const toStage=()=>{const s=firstSong();if(!s)return false;if($('stage').hidden){ui.tip1=1;open([s.id],0,'')}return true};
+const mob=()=>innerWidth<=560;
+const STEPS=[
+ {t:'Vamos fazer um tour',x:'Vou abrir as telas de verdade e apontar onde fica cada coisa. Use <b>Próximo</b> e <b>Voltar</b>; dá para sair quando quiser.',go:()=>toLib('bib')},
+ {el:'#tBib',t:'Biblioteca',x:'Aqui ficam todas as suas músicas. As abas de baixo levam às outras partes do app.',go:()=>toLib('bib')},
+ {el:'.qrow',t:'Busca e total',x:'Procure por nome da música ou do artista. Ao lado aparece quantas músicas você tem.',go:()=>toLib('bib')},
+ {el:'#list li:not(.empty)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar (e use <b>Desfazer</b> se errar).',go:()=>toLib('bib')},
+ {el:'#fileBtn',t:'Importar cifras',x:'Traga os arquivos do OnSong (ou o backup do Calisto) por aqui.',go:()=>toLib('bib')},
+ {el:'#newPl',t:'Playlists',x:'Um set para cada show. Crie aqui e escolha as músicas no catálogo.',go:()=>toLib('pls')},
+ {el:'#list li:not(.empty)',t:'Dentro de uma playlist',x:'Abra para ver <b>▶ Tocar</b>, <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b>: arquivar, PDF e Spotify.',go:()=>toLib('pls')},
+ {el:'#sheet',t:'No palco',x:'Encoste na letra para começar ou pausar a rolagem. Segure numa linha para criar uma nota ou um marca-texto.',go:toStage,need:firstSong},
+ {el:'#tDn',el2:'#tUp',t:'Tom',x:'<b>♭</b> e <b>♯</b> mudam o tom meio em meio. Toque no tom do meio para escolher a artista ou voltar ao original.',go:toStage,need:firstSong},
+ {el:'.spdg',t:'Velocidade',x:'<b>−</b> e <b>+</b> ajustam a velocidade da rolagem.',go:toStage,need:firstSong},
+ {el:()=>mob()?'#more':'#edit',t:'Editar e mais',x:'Corrija a cifra na hora. No celular, o <b>⋯</b> também tem tamanho da letra, afinador e <b>Tirar desta playlist</b>.',go:toStage,need:firstSong},
+ {el:'#foot',t:'Próxima música',x:'As setas de baixo passam para a música anterior ou a próxima do set, com o nome de cada uma.',go:toStage,need:firstSong},
+ {el:'#recIdea',t:'Composição',x:'<b>Gravar agora</b> registra uma melodia na hora, sem procurar no gravador do celular.',go:()=>toLib('comp')},
+ {el:'#newIdea',t:'Nova ideia',x:'Abre a tela de escrita com o gravador em cima e o <b>Ditar letra</b>: o texto aparece enquanto você fala, e cada pausa vira uma linha.',go:()=>toLib('comp')},
+ {el:'#tTun',t:'Afinador, metrônomo e diapasão',x:'Três ferramentas na mesma aba. O metrônomo continua tocando quando você volta para a cifra.',go:()=>toLib('bib')},
+ {el:'#tSpo',t:'Spotify',x:'Mande qualquer playlist para o Spotify e escolha a versão de cada música, sem mudar o link.',go:()=>toLib('spo')},
+ {el:'#cloudBtn',t:'Sua conta',x:'Entre para guardar tudo na nuvem e usar no celular, no iPad e no computador.',go:()=>toLib('bib'),need:()=>!$('cloudBtn').hidden},
+ {el:'#helpBtn',t:'Pronto!',x:'Este tour fica aqui no <b>?</b>, para quando quiser rever.',go:()=>toLib('bib'),end:1}];
+let cI=0,cList=[];
+const pick=sel=>{sel=typeof sel==='function'?sel():sel;if(!sel)return null;const el=document.querySelector(sel);if(!el)return null;const r=el.getBoundingClientRect();return r.width&&r.height?r:null};
+function cPlace(){const st=cList[cI];if(!st)return;let r=pick(st.el);if(r&&st.el2){const r2=pick(st.el2);if(r2){const L=Math.min(r.left,r2.left),T=Math.min(r.top,r2.top),R=Math.max(r.right,r2.right),B=Math.max(r.bottom,r2.bottom);r={left:L,top:T,right:R,bottom:B,width:R-L,height:B-T}}}
+  const H=$('cHole'),C=$('cCard'),P=$('cPath'),W=innerWidth,VH=innerHeight,pad=6;
+  if(!r){H.style.cssText='left:50%;top:40%;width:0;height:0';C.style.left=Math.max(12,(W-C.offsetWidth)/2)+'px';C.style.top=Math.max(20,(VH-C.offsetHeight)/2)+'px';P.setAttribute('d','');return}
+  const hl=Math.max(4,r.left-pad),ht=Math.max(4,r.top-pad),hw=Math.min(W-8,r.width+pad*2),hh=Math.min(VH-8,r.height+pad*2);
+  H.style.cssText=`left:${hl}px;top:${ht}px;width:${hw}px;height:${hh}px`;
+  const cw=C.offsetWidth,ch=C.offsetHeight,gap=46,below=ht+hh+gap+ch<VH-8,above=ht-gap-ch>8;
+  let top=below?ht+hh+gap:above?ht-gap-ch:Math.max(12,Math.min(VH-ch-12,ht+hh/2-ch/2)),left=Math.max(12,Math.min(W-cw-12,hl+hw/2-cw/2));
+  if(!below&&!above&&hh>VH*.5){top=VH-ch-16} /* área grande (a letra): cartão por cima, embaixo */
+  C.style.left=left+'px';C.style.top=top+'px';
+  const tx=hl+hw/2,ty=top>ht?ht+hh+4:ht-4,sx=Math.max(left+24,Math.min(left+cw-24,tx)),sy=top>ht?top-2:top+ch+2;
+  if(top>=ht&&top<=ht+hh){P.setAttribute('d','');return}
+  const mx=(sx+tx)/2+(sx===tx?28:0),my=(sy+ty)/2;P.setAttribute('d',`M${sx},${sy} Q${mx},${my} ${tx},${ty}`)}
+let cTok=0;
+async function cShow(i){const tok=++cTok;cI=Math.max(0,Math.min(cList.length-1,i));const st=cList[cI];coach.classList.add('busy');
+  try{if(st.go)await st.go()}catch(e){}await wait(260);if(tok!==cTok)return;
+  const e1=typeof st.el==='function'?st.el():st.el;const el=e1&&document.querySelector(e1);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});await wait(60);if(tok!==cTok)return;
+  $('cTtl').textContent=st.t;$('cTxt').innerHTML=st.x;$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
+  $('cPrev').hidden=!cI;$('cNext').textContent=cI===cList.length-1?'Começar a usar':'Próximo';coach.classList.remove('busy');cPlace();setTimeout(()=>{if(tok===cTok)cPlace()},320)}
+function tour(){stopScroll();cList=STEPS.filter(s=>!s.need||s.need());coach.hidden=false;cShow(0)}
+function tourEnd(){cTok++;coach.hidden=true;coach.classList.remove('busy');toLib('bib')}
+$('cNext').addEventListener('click',()=>{if(coach.classList.contains('busy'))return;cI===cList.length-1?tourEnd():cShow(cI+1)});
+$('cPrev').addEventListener('click',()=>{if(coach.classList.contains('busy'))return;cShow(cI-1)});$('cSkip').addEventListener('click',tourEnd);
+addEventListener('resize',()=>{if(!coach.hidden)cPlace()});
+document.addEventListener('keydown',e=>{if(coach.hidden)return;e.stopPropagation();if(e.key==='ArrowRight'||e.key==='Enter'){e.preventDefault();$('cNext').click()}else if(e.key==='ArrowLeft')$('cPrev').click();else if(e.key==='Escape')tourEnd()},true);
+$('helpBtn').addEventListener('click',()=>tour());
 if(!ui.tour1){ui.tour1=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidden||!$('editor').hidden)return;
-  modal('Primeira vez no Calisto?','<p style="margin:0 0 12px;color:var(--muted)">Um tour de 1 minuto mostra o principal. Ele fica guardado no <b>?</b> do topo, para quando quiser.</p><button class="primary" data-t="go" style="width:100%;min-height:48px">Fazer o tour</button>',
-  e=>{if(e.target.closest('[data-t]'))tour(0)},null,'Agora não')},1500)}
+  modal('Primeira vez no Calisto?','<p style="margin:0 0 12px;color:var(--muted)">Um tour de 1 minuto abre as telas e mostra onde fica cada coisa. Ele fica guardado no <b>?</b> do topo, para quando quiser.</p><button class="primary" data-t="go" style="width:100%;min-height:48px">Fazer o tour</button>',
+  e=>{if(e.target.closest('[data-t]')){closeModal();tour()}},null,'Agora não')},1500)}
 /* ---------- desfazer: guarda uma foto do catálogo antes das ações que mudam coisas (até 10) ---------- */
 const undoSt=[];
 function snap(label,after){try{undoSt.push({label,after,j:JSON.stringify({songs,pls,prefs})});if(undoSt.length>10)undoSt.shift()}catch(e){}}
