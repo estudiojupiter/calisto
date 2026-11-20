@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#0c0e12">
+<meta name="theme-color" content="#120a07">
 <title>Calisto</title>
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=panchang@500,700&display=swap"><!-- letra da marca (Panchang, Fontshare, uso livre); o app guarda uma cópia para funcionar sem internet -->
 <style>
 /* Calisto (antes "Palco") v0 · protótipo do app próprio (15/11/2026). Tema escuro fixo: pensado para palco. */
 :root{
-  --bg:#0c0e12; --panel:#151922; --line:#262c38; --ink:#eef1f6; --muted:#8c96a8;
-  --chord:#ffb547; --sec:#7cc4ff; --note:#c9a7ff; --accent:#ffb547; --accent-ink:#1a1206; --danger:#ff7a6b;
+  /* identidade de 20/11 (prévia v22): noite, painel, linhas, creme, apagado, ocre, ferrugem */
+  --bg:#120a07; --panel:#1d110b; --line:#3a2418; --ink:#f6e7cb; --muted:#b89a80;
+  --chord:#e8b46a; --sec:#b89a80; --note:#d9784a; --accent:#e8b46a; --accent-ink:#1a0f0a; --danger:#ff7a6b; --ferr:#c4622d;
   --f-ui:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,sans-serif;
   --f-read:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",Roboto,sans-serif; /* letra e acordes: fonte normal, não "de máquina de escrever" */
   --f-mono:"SF Mono",ui-monospace,Menlo,Consolas,monospace; /* só para tablatura e editor */
@@ -107,11 +108,11 @@ body.dragging{user-select:none;-webkit-user-select:none}
 .chart .tab{font-family:var(--f-mono);font-size:.8em;white-space:pre;overflow-x:auto}
 .chart .gap{height:.7em}
 .chart .s{color:var(--sec);font-family:var(--f-ui);font-weight:800;text-transform:uppercase;letter-spacing:.06em;font-size:.75em;margin-top:.9em}
-.chart .rep{border-left:2px solid var(--sec);padding-left:1.7em}
+.chart .rep{border-left:2px solid var(--accent);padding-left:1.7em}
 .chart .ln,.chart .rep{break-inside:avoid}
 /* lembretes e marca-texto (criados pelo Gui, segurando o dedo numa linha) */
 #sheet{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
-.chart .note{display:block;width:fit-content;max-width:100%;font-family:var(--f-ui);font-size:.62em;font-weight:600;line-height:1.35;color:var(--note);background:rgba(200,160,255,.10);border-left:2px solid var(--note);border-radius:0 6px 6px 0;padding:.25em .7em;margin:.5em 0 .15em}
+.chart .note{display:block;width:fit-content;max-width:100%;font-family:var(--f-ui);font-size:.62em;font-weight:600;line-height:1.35;color:var(--note);background:rgba(217,120,74,.12);border-left:2px solid var(--note);border-radius:0 6px 6px 0;padding:.25em .7em;margin:.5em 0 .15em}
 .chart .note{touch-action:none;cursor:grab;position:relative;z-index:3}
 .chart .nw{position:relative;height:0}
 .chart .note.fl{position:absolute;left:0;top:0;margin:0;background:rgba(27,21,40,.95);box-shadow:0 2px 12px rgba(0,0,0,.55);max-width:80vw}
@@ -308,6 +309,36 @@ html{-webkit-tap-highlight-color:transparent}
   #print .k{font-weight:700}
   #print .d{color:#666;font-size:11pt}
 }
+/* ---------- identidade (20/11): logo, colcheia, abertura, carregando ---------- */
+.lhead h1.logo{display:flex;align-items:center;height:30px}
+.lhead h1.logo svg{height:30px;width:auto;overflow:visible}
+.tabs button b svg{width:18px;height:18px;display:block}
+.tabs button b svg.col{width:12px}
+.vazio{display:grid;justify-items:center;gap:8px;text-align:center;color:var(--muted);padding:34px 18px}
+.vazio svg{color:var(--ink);opacity:.75}
+.vazio b{color:var(--ink)}
+.chart .fimw{position:relative;padding-right:1.4em}
+.chart .fimc{position:absolute;right:0;bottom:.25em;width:.55em;height:.85em;color:var(--ink);opacity:.5;pointer-events:none}
+#carregando{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;align-content:center;gap:14px;opacity:0;animation:cIn .2s .35s forwards}
+#carregando svg{width:170px;height:170px;overflow:visible}
+#carregando p{color:var(--muted);font-size:.85rem;margin:0}
+@keyframes cIn{to{opacity:1}}
+#abertura{position:fixed;inset:0;z-index:40;background:#07050a;overflow:hidden;color:var(--ink)}
+#abertura .jup{position:absolute;left:-15%;width:130%;max-width:none;bottom:-16%;filter:saturate(1.25) contrast(1.1)}
+@media (min-aspect-ratio:3/4){#abertura .jup{left:5%;width:90%;bottom:-40%}}
+#abertura .fade{position:absolute;inset:0;background:linear-gradient(#07050a 30%,rgba(7,5,10,.04) 60%,rgba(7,5,10,.5))}
+#abertura .moon{position:absolute;width:min(40vw,150px);left:50%;top:max(14vh,90px);transform:translateX(-50%)}
+#abertura .name{position:absolute;left:0;right:0;top:calc(max(14vh,90px) + min(40vw,150px) + 22px);display:grid;justify-items:center;gap:8px}
+#abertura .name svg{width:min(72vw,300px);overflow:visible}
+#abertura .sl{font-size:.92rem;opacity:.9;text-align:center;padding:0 20px}
+#abertura .bot{position:absolute;left:max(22px,env(safe-area-inset-left,0px));right:max(22px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));display:grid;gap:10px;max-width:420px;margin:0 auto}
+#abertura .go{background:var(--ink);color:#120a06;border:0;border-radius:999px;padding:14px 0;font-weight:700;font-size:1rem}
+#abertura .go2{background:transparent;color:var(--ink);border:1px solid rgba(246,231,203,.45);border-radius:999px;padding:13px 0;font-weight:600}
+.sig{display:flex;justify-content:center;align-items:center;gap:7px;font-size:.75rem;opacity:.9}
+.sig i{display:inline-block;width:11px;aspect-ratio:329/430;background:url(img/G-creme.png) center/contain no-repeat}
+.csig{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.8rem;margin-top:-4px}
+.csig svg{width:8px;height:12px;color:var(--ink);opacity:.7}
+@media (prefers-reduced-motion:reduce){#carregando{animation:none;opacity:1}}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -315,10 +346,16 @@ html{-webkit-tap-highlight-color:transparent}
 <meta name="apple-mobile-web-app-title" content="Calisto">
 </head>
 <body>
+<!-- a colcheia do Estúdio Júpiter ("Júpiter em tom único"), desenhada uma vez -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+ <mask id="colM" maskUnits="userSpaceOnUse" x="-10" y="-10" width="20" height="20"><rect x="-10" y="-10" width="20" height="20" fill="#fff"/><g transform="rotate(-22)" fill="#000"><rect x="-7" y="-1.5" width="14" height=".38"/><rect x="-7" y=".4" width="14" height=".55"/><rect x="-7" y="2.1" width="14" height=".32"/></g></mask>
+ <symbol id="col" viewBox="-6.6 -23.2 18.6 27.6"><ellipse rx="5.4" ry="3.9" transform="rotate(-22)" fill="currentColor" mask="url(#colM)"/><rect x="3.75" y="-22" width="1.6" height="21" fill="currentColor"/><path d="M5 -21.4 C 8.8 -20.6, 10.6 -18.4, 10.4 -15.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/><circle cx="10.1" cy="-14.6" r="1.75" fill="currentColor"/></symbol>
+</defs></svg>
+<div id="carregando" aria-live="polite"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M8.67,63.85 A43 15 -16 0 1 91.33,40.15" fill="none" stroke="#f6e7cb" stroke-width="1" opacity=".35"/><image href="img/lua-96.png" x="30" y="30" width="40" height="40"/><path d="M91.33,40.15 A43 15 -16 0 1 8.67,63.85" fill="none" stroke="#f6e7cb" stroke-width="1.1" opacity=".9"/><g><svg x="-5.5" y="-14" width="11" height="16" style="color:#f6e7cb"><use href="#col" width="100%" height="100%"/></svg><animateMotion dur="3.2s" repeatCount="indefinite" path="M91.33,40.15 A43 15 -16 0 1 8.67,63.85 A43 15 -16 0 1 91.33,40.15"/></g></svg><p>Abrindo suas músicas…</p></div>
 
 <section id="lib" class="wrapx">
   <div class="lhead">
-    <h1>calisto</h1>
+    <h1 class="logo" aria-label="Calisto"><svg class="lg"></svg></h1>
     <button id="helpBtn" class="mini" aria-label="Tutorial do Calisto" title="Tutorial">?</button>
     <button id="cloudBtn" class="mini" hidden>☁︎ Entrar</button>
     <input type="file" id="file" multiple hidden><!-- sem "accept": o iPhone não conhece .onsong e deixava os arquivos cinza -->
@@ -343,11 +380,11 @@ html{-webkit-tap-highlight-color:transparent}
   </div>
   <ul class="list" id="list"></ul>
   <nav class="tabs" role="tablist">
-    <button id="tBib" class="on" role="tab"><b>♪</b>Biblioteca <span id="nBib"></span></button>
-    <button id="tPls" role="tab"><b>☰</b>Playlists <span id="nPls"></span></button>
-    <button id="tSpo" role="tab"><b>◉</b>Spotify <span id="nSpo"></span></button>
-    <button id="tComp" role="tab"><b>✎</b>Composição <span id="nComp"></span></button>
-    <button id="tTun"><b>♮</b>Afinador</button>
+    <button id="tBib" class="on" role="tab"><b><svg class="col" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg></b>Biblioteca <span id="nBib"></span></button>
+    <button id="tPls" role="tab"><b><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 5h14M3 10h14M3 15h9"/></svg></b>Playlists <span id="nPls"></span></button>
+    <button id="tSpo" role="tab"><b><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="8"/><path d="M5.5 8c3-1 6.5-.8 9 .6M6.2 10.8c2.4-.7 5-.5 7 .5M7 13.4c1.8-.4 3.6-.3 5 .4"/></svg></b>Spotify <span id="nSpo"></span></button>
+    <button id="tComp" role="tab"><b><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M4 16l1-4 8.5-8.5 3 3L8 15z"/><path d="M12 5l3 3"/></svg></b>Composição <span id="nComp"></span></button>
+    <button id="tTun"><b><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M7 2v7a3 3 0 0 0 6 0V2M10 12v6"/></svg></b>Afinador</button>
   </nav>
 </section>
 
@@ -368,6 +405,7 @@ html{-webkit-tap-highlight-color:transparent}
   <div class="grab" id="grab" aria-hidden="true"></div>
 </section>
 <div id="cd" hidden></div>
+<section id="abertura" hidden><img class="jup" src="img/jupiter.jpg" alt=""><div class="fade"></div><img class="moon" src="img/lua-240.png" alt="A lua Calisto"><div class="name"><svg class="lg"></svg><span class="sl">Tudo que gira em torno da sua música.</span></div><div class="bot"><button class="go" id="abEntrar">Entrar</button><button class="go2" id="abSem">Começar sem conta</button><div class="sig"><i></i>Estúdio Júpiter</div></div></section>
 
 <section id="editor" hidden>
   <div class="ehead wrapx"><button id="eCancel">Cancelar</button><b id="eTtl">Editar cifra</b><button class="primary" id="eSave">Salvar</button></div>
@@ -672,13 +710,13 @@ function drawList(){
     $('bibN').hidden=!LIB.length;$('bibN').textContent=q?`${r.length} de ${LIB.length}`:`${LIB.length} músicas`;
     $('list').innerHTML=r.length?r.map(s=>{const n=inPl[s.id]||0;
       return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
-      :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>+ Música</b>: dá para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong.'}</li>`;
+      :`<li class="empty"><div class="vazio">${songs.length?`<svg width="18" height="28" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Nada com essa busca</b><span>Tente o nome do artista ou só uma palavra do título.</span>`:`<svg width="22" height="34" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Sua biblioteca começa aqui</b><span>Toque em <b>+ Música</b> para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong.</span>`}</div></li>`;
   }else if(view==='comp'){
     const r=songs.filter(s=>s.comp&&(!qq||norm(s.title+' '+(s.text||'')).includes(qq))).sort((a,b)=>(b.mt||0)-(a.mt||0));
     const dt=t=>t?new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
     $('list').innerHTML=r.length?r.map(s=>{const n=(s.recs||[]).length,l1=(s.text||'').split('\n').find(x=>x.trim())||'';
       return `<li class="idea"><div class="open" data-comp="${s.id}"><div class="t">${h(s.title)}</div><div class="a">${[dt(s.mt),n?`🎙 ${n}`:'',h(l1)].filter(Boolean).join(' · ')}</div></div><span></span><button class="mini" data-fin="${s.id}">✓ Finalizar</button><button class="swdel" data-del="comp:${s.id}">Apagar</button></li>`}).join('')
-      :`<li class="empty">${qq?'Nada com essa busca.':'Nenhuma ideia ainda. Toque em <b>Gravar agora</b> para registrar a primeira melodia, ou em <b>+ Nova ideia</b> para começar pela letra.'}</li>`;
+      :`<li class="empty"><div class="vazio">${qq?`<svg width="18" height="28" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Nada com essa busca</b>`:`<svg width="22" height="34" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>A primeira ideia começa aqui</b><span>Toque em <b>Gravar agora</b> para registrar uma melodia, ou em <b>+ Nova ideia</b> para começar pela letra.</span>`}</div></li>`;
   }else if(view==='spo'){
     const sp=window.calistoSpotify;const withL=pls.filter(p=>p.spotify&&p.spotify.url&&plMatch(p));
     $('spNote').innerHTML=!sp?'O Spotify funciona na versão instalada do Calisto.':(sp.connected()?'Conectado ao Spotify. Para criar ou atualizar: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. <button class="mini" id="spOut">Desconectar</button>':'Para criar playlists no Spotify: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. Na primeira vez ele pede para entrar na sua conta do Spotify.');
@@ -847,7 +885,7 @@ function show(){
   const quem=origView?(tr?`Original ${cur.key}, ajustado agora para ${k} (não fica salvo)`:`Tom original: ${k}`):singer?(hasSg(cur.id,singer)?`Tom de ${singer}: ${k}`:`${singer} ainda sem tom salvo (mostrando ${mine?'o seu':'o original'}: ${k})`):plMode&&ptr!=null?`Tom da playlist: ${k}`:mine?`Meu tom: ${k}`:`Tom original: ${k}`;
   const cp=cur.capo||0,sh=tr-cp; /* capotraste: o tom é o que soa; a cifra mostra as formas (tom − capo) */
   const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cp?`Capo ${cp}${cur.key?` · formas de ${trKey(cur.key,sh)}`:''}`:'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
-  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;
+  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;{const L=$('chart').querySelectorAll('.ln,.ly,.cl');const z=L[L.length-1];if(z){z.classList.add('fimw');z.insertAdjacentHTML('beforeend','<svg class="fimc" width="9" height="14" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>')}}
   toggleChrome(false);padTop();
   $('sheet').scrollTop=0;$('prev').disabled=qi===0;$('next').disabled=qi>=queue.length-1;
   const nmOf=i=>{const s=songs.find(x=>x.id===queue[i]);return s?s.title:''};
@@ -1210,7 +1248,7 @@ let cTok=0;
 async function cShow(i){const tok=++cTok;cI=Math.max(0,Math.min(cList.length-1,i));const st=cList[cI];coach.classList.add('busy');
   try{if(st.go)await st.go()}catch(e){}await wait(260);if(tok!==cTok)return;
   const e1=typeof st.el==='function'?st.el():st.el;const el=e1&&document.querySelector(e1);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});await wait(60);if(tok!==cTok)return;
-  $('cTtl').textContent=st.t;$('cTtl').classList.toggle('brand',!!st.brand);$('cTxt').innerHTML=st.x;$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
+  $('cTtl').textContent=st.t;$('cTtl').classList.toggle('brand',!!st.brand);$('cTxt').innerHTML=st.x+(st.brand?'<span class="csig"><svg width="8" height="12" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>Estúdio Júpiter</span>':'');$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
   $('cPrev').hidden=!cI;$('cNext').textContent=cI===cList.length-1?'Começar a usar':'Próximo';coach.classList.remove('busy');cPlace();setTimeout(()=>{if(tok===cTok)cPlace()},320)}
 function tour(){stopScroll();cList=STEPS.filter(s=>!s.need||s.need());coach.hidden=false;cShow(0)}
 function tourEnd(){cTok++;coach.hidden=true;coach.classList.remove('busy');toLib('bib')}
@@ -1219,7 +1257,7 @@ $('cPrev').addEventListener('click',()=>{if(coach.classList.contains('busy'))ret
 addEventListener('resize',()=>{if(!coach.hidden)cPlace()});
 document.addEventListener('keydown',e=>{if(coach.hidden)return;e.stopPropagation();if(e.key==='ArrowRight'||e.key==='Enter'){e.preventDefault();$('cNext').click()}else if(e.key==='ArrowLeft')$('cPrev').click();else if(e.key==='Escape')tourEnd()},true);
 $('helpBtn').addEventListener('click',()=>tour());
-if(!ui.tour2){const volta=!!ui.tour1;ui.tour1=ui.tour2=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidden||!$('editor').hidden)return;
+function offerTour(){if(ui.tour2)return;const volta=!!ui.tour1;ui.tour1=ui.tour2=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidden||!$('editor').hidden)return;
   modal(volta?'Tour novo do calisto':'Primeira vez no calisto?','<p style="margin:0 0 12px;color:var(--muted)">Um tour de 1 minuto abre as telas e mostra onde fica cada coisa. Ele fica guardado no <b>?</b> do topo, para quando quiser.</p><button class="primary" data-t="go" style="width:100%;min-height:48px">Fazer o tour</button>',
   e=>{if(e.target.closest('[data-t]')){closeModal();tour()}},null,'Agora não')},1500)}
 /* ---------- desfazer: guarda uma foto do catálogo antes das ações que mudam coisas (até 10) ---------- */
@@ -1286,6 +1324,21 @@ async function limpeza(){try{history.replaceState(null,'',location.pathname+loca
       try{await ADB.tx('readwrite',o=>o.clear())}catch(e){}C.length=0;nA=0;$('mBody').innerHTML=html();toast(`${ids.size} composições e as gravações apagadas`)}
     else if(k==='spl'){b.firstChild.textContent='Procurando…';try{if(!(await sp.pronto(null)))return;spl=await sp.listarCalisto()}catch(x){toast('Não deu para falar com o Spotify agora.');spl=null}$('mBody').innerHTML=html()}
     else if(k==='spdel'){if(!arm(b))return;b.firstChild.textContent='Apagando…';const r=await sp.apagarCalisto(spl);spl=null;$('mBody').innerHTML=html();toast(r.falhou.length?`${r.n} apagadas; não deu: ${r.falhou.join(', ')}`:`${r.n} playlists apagadas no Spotify`)}},null,'Fechar')}
+/* ---------- identidade: logo "órbita na palavra" (desenhado depois que a letra Panchang carrega) ---------- */
+function logo(svg){const NS='http://www.w3.org/2000/svg',CR='#f6e7cb';svg.innerHTML='';svg.setAttribute('viewBox','0 0 420 170');const t=document.createElementNS(NS,'text');t.textContent='Calisto';
+  t.setAttribute('x',210);t.setAttribute('y',104);t.setAttribute('text-anchor','middle');t.setAttribute('font-family','Panchang, sans-serif');t.setAttribute('font-weight',500);t.setAttribute('font-size',64);t.setAttribute('fill',CR);svg.appendChild(t);
+  const b=t.getBBox();if(!b.width)return;const cx=b.x+b.width/2,cy=b.y+b.height*.6,rx=b.width*.58,ry=b.height*.42,deg=-7,r=deg*Math.PI/180,l=[cx-rx*Math.cos(r),cy-rx*Math.sin(r)],q=[cx+rx*Math.cos(r),cy+rx*Math.sin(r)];
+  svg.insertAdjacentHTML('afterbegin',`<path d="M${l} A${rx} ${ry} ${deg} 0 1 ${q}" fill="none" stroke="${CR}" stroke-width="1.5" opacity=".4"/>`);svg.appendChild(t);
+  svg.insertAdjacentHTML('beforeend',`<path d="M${q} A${rx} ${ry} ${deg} 0 1 ${l}" fill="none" stroke="${CR}" stroke-width="1.7"/><image href="img/lua-96.png" x="${q[0]-10}" y="${q[1]-10}" width="20" height="20"/>`);
+  const bb=svg.getBBox();svg.setAttribute('viewBox',`${bb.x-4} ${bb.y-4} ${bb.width+8} ${bb.height+8}`)}
+const drawLogos=()=>document.querySelectorAll('svg.lg').forEach(x=>{if(x.getBoundingClientRect().width||!x.closest('[hidden]'))logo(x)});
+(document.fonts&&document.fonts.load?document.fonts.load('500 64px Panchang'):Promise.resolve()).then(drawLogos,drawLogos);
+/* abertura: só na primeira vez (biblioteca vazia); depois o app abre direto */
+function abertura(force){if(!force&&(ui.ab1||songs.length)){offerTour();return}$('abertura').hidden=false;drawLogos();
+  const fim=()=>{$('abertura').hidden=true;ui.ab1=1;store.set('ui',ui);offerTour()};
+  $('abSem').onclick=fim;$('abEntrar').onclick=()=>{fim();const b=$('cloudBtn');if(b&&!b.hidden)setTimeout(()=>b.click(),350)}}
+abertura(location.hash==='#abertura');
+{const c=$('carregando');if(c)c.remove()}
 const hashGo=()=>{if(location.hash==='#limpeza')setTimeout(limpeza,300)};addEventListener('hashchange',hashGo);hashGo();
 window.__calistoOk(window.calistoApp);
 })();
