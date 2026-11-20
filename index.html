@@ -750,7 +750,7 @@ $('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]
   const dl=e.target.closest('[data-del]');
   if(dl){e.stopPropagation();const[k,v]=dl.dataset.del.split(':');
     if(k==='song'){const s=songs.find(x=>x.id===v);snap('apagar música');delSong(v);toast(`"${s?s.title:'Música'}" apagada`,1)}
-    else if(k==='pl'){const p=plOf(v);snap('apagar playlist');pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`,1)}
+    else if(k==='pl'){const p=plOf(v);snap('apagar playlist');pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`,1);spApagarJunto(p)}
     else if(k==='comp'){const s=songs.find(x=>x.id===v);snap('apagar ideia');songs=songs.filter(x=>x.id!==v);save();drawList();toast(`Ideia "${s?s.title:''}" apagada`,1)}
     else if(k==='item'){const p=plOf(curPl);if(p){snap('tirar da playlist');p.items.splice(+v,1);save();drawList();toast('Tirada da playlist (continua na biblioteca)',1)}}
     return}
@@ -773,6 +773,10 @@ $('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]
       else{$('list').querySelectorAll('[data-rm][data-arm]').forEach(x=>{delete x.dataset.arm;x.textContent='✕';x.classList.remove('arm')});
         t.dataset.arm='1';t.textContent='🗑';t.classList.add('arm');t.setAttribute('aria-label','Tocar de novo para tirar');
         setTimeout(()=>{if(t.isConnected&&t.dataset.arm){delete t.dataset.arm;t.textContent='✕';t.classList.remove('arm');t.setAttribute('aria-label','Tirar da playlist')}},3000)}}}});
+/* 20/11: playlist que também está no Spotify: ao apagar no Calisto, pergunta se apaga lá também (ou só lá, pelo ⋯ Mais) */
+function spApagarJunto(p,soSpotify){const sp=window.calistoSpotify;if(!p||!p.spotify||!p.spotify.id||!sp)return;const alvo={id:p.spotify.id,nome:p.name};
+  setTimeout(()=>modal('Também no Spotify',`<p class="spnote">“${h(p.name)}” ${soSpotify?'está':'também está'} no Spotify. ${soSpotify?'Apagar a playlist de lá? Aqui no Calisto ela continua.':'Quer apagar de lá também?'}</p><button class="big" data-a="sim" style="color:var(--danger)"><span>Apagar no Spotify</span><span></span></button>`,
+    async e=>{const b=e.target.closest('[data-a="sim"]');if(!b)return;b.firstChild.textContent='Apagando…';try{if(!(await sp.pronto(null)))return;const r=await sp.apagarCalisto([alvo]);closeModal();if(soSpotify){delete p.spotify;save();drawList()}toast(r.n?'Apagada no Spotify':'Não deu para apagar no Spotify agora')}catch(x){closeModal();toast('Não deu para falar com o Spotify agora.')}},null,soSpotify?'Cancelar':'Deixar no Spotify'),soSpotify?0:400)}
 function playPl(id,i){const p=plOf(id);if(p&&p.items.length)open(p.items.slice(),i||0,p.singer||'',p.id);else toast('Playlist vazia')}
 
 // segurar uma música na lista (Biblioteca ou playlist) = marcar ou desmarcar como tocada
@@ -812,7 +816,7 @@ $('plAdd').addEventListener('click',()=>pickSongs());
 $('plSg').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
   pickSinger(`Tom de "${p.name}"`,p.singer||'',sg=>{p.singer=sg||undefined;save();drawList();toast(sg?`Ao tocar esta playlist, cada música abre no tom de ${sg}`:'Playlist no seu tom')},null,'Meu tom')});
 $('plMore').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
-  modal(p.name,`<button class="big" data-a="txt">Compartilhar o set em texto <span>›</span></button>${inFrame?'':'<button class="big" data-a="pdf">Gerar PDF do set <span>›</span></button>'}<button class="big" data-a="dup">Duplicar playlist <span>›</span></button>${window.calistoSpotify?`<button class="big" data-a="spot" style="color:#1ed760">${p.spotify?'Atualizar no Spotify':'Criar no Spotify'} <span>›</span></button>`+(p.spotify?'<button class="big" data-a="spcheck">Conferir músicas no Spotify <span>›</span></button>':''):''}${p.arch?'<button class="big" data-a="arch">Desarquivar (volta para as ativas) <span>›</span></button>':'<button class="big" data-a="arch">Arquivar playlist <span>›</span></button>'}<button class="big" data-a="del" style="color:var(--danger)">Apagar playlist <span>›</span></button>`,
+  modal(p.name,`<button class="big" data-a="txt">Compartilhar o set em texto <span>›</span></button>${inFrame?'':'<button class="big" data-a="pdf">Gerar PDF do set <span>›</span></button>'}<button class="big" data-a="dup">Duplicar playlist <span>›</span></button>${window.calistoSpotify?`<button class="big" data-a="spot" style="color:#1ed760">${p.spotify?'Atualizar no Spotify':'Criar no Spotify'} <span>›</span></button>`+(p.spotify?'<button class="big" data-a="spcheck">Conferir músicas no Spotify <span>›</span></button><button class="big" data-a="spdel" style="color:var(--danger)">Apagar do Spotify <span>›</span></button>':''):''}${p.arch?'<button class="big" data-a="arch">Desarquivar (volta para as ativas) <span>›</span></button>':'<button class="big" data-a="arch">Arquivar playlist <span>›</span></button>'}<button class="big" data-a="del" style="color:var(--danger)">Apagar playlist <span>›</span></button>`,
     e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
       if(k==='txt'){closeModal();shareText(p)}
       else if(k==='pdf'){closeModal();printSet(p)}
@@ -820,7 +824,8 @@ $('plMore').addEventListener('click',()=>{const p=plOf(curPl);if(!p)return;
       else if(k==='spcheck'){closeModal();window.calistoSpotify.conferir(p)}
       else if(k==='arch'){snap(p.arch?'desarquivar':'arquivar');p.arch=!p.arch;if(!p.arch)delete p.arch;save();view='pls';closeModal();drawList();toast(p.arch?`"${p.name}" foi para as arquivadas`:`"${p.name}" voltou para as ativas`,1)}
       else if(k==='dup'){const c={id:uid(),name:p.name+' (cópia)',items:p.items.slice(),singer:p.singer,tr:Object.assign({},p.tr||{})};pls.splice(pls.indexOf(p)+1,0,c);save();curPl=c.id;closeModal();drawList();toast('Cópia criada. Renomeie se quiser')}
-      else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){snap('apagar playlist');pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`,1)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
+      else if(k==='spdel'){closeModal();spApagarJunto(p,true)}
+      else if(k==='del'){if(a.dataset.arm&&Date.now()-a.dataset.arm<3000){snap('apagar playlist');pls=pls.filter(x=>x!==p);save();view='pls';closeModal();drawList();toast(`Playlist "${p.name}" apagada (as músicas continuam no catálogo)`,1);spApagarJunto(p)}else{a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar '}}},null,'Fechar')});
 
 /* ---------- exportar o set ---------- */
 function setLines(p){const by=Object.fromEntries(songs.map(s=>[s.id,s]));return p.items.filter(id=>by[id]).map((id,i)=>{const s=by[id];const k=trKey(s.key,plTr(p,id));return {n:i+1,t:s.title,a:s.artist,k,capo:s.capo,d:s.dur}})}
@@ -1398,7 +1403,7 @@ window.__calistoOk(window.calistoApp);
 })();
 </script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){const t=document.getElementById('toast');if(t){t.textContent='Calisto atualizado. Feche e abra para usar a versão nova.';t.hidden=false;setTimeout(()=>t.hidden=true,5000)}}})})}).catch(()=>{})})}</script>
-<script type="module" src="sync.2a791312.js"></script>
+<script type="module" src="sync.cdf0e767.js"></script>
 <script type="module" src="spotify.7c6f104a.js"></script>
 </body>
 </html>
