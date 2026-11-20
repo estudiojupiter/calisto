@@ -283,6 +283,19 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.9rem;z-index:45;max-width:90vw;text-align:center}
 #print{display:none}
 
+/* 19/11: telas e janelas entram com movimento curto (fica mais fluido); quem pede menos movimento no aparelho não vê */
+@media (prefers-reduced-motion:no-preference){
+#stage:not([hidden]),#editor:not([hidden]),#tuner:not([hidden]){animation:cIn .22s cubic-bezier(.2,.8,.2,1)}
+.modal:not([hidden]){animation:cFade .16s ease-out}.modal:not([hidden]) .mbox{animation:cUp .24s cubic-bezier(.2,.8,.2,1)}
+.toast:not([hidden]){animation:cToast .2s cubic-bezier(.2,.8,.2,1)}
+#vBib:not([hidden]),#vPls:not([hidden]),#vPl:not([hidden]),#vComp:not([hidden]),#vSpo:not([hidden]){animation:cFade .16s ease-out}
+button{transition:transform .09s ease,background-color .15s,border-color .15s}}
+@keyframes cIn{from{opacity:0;transform:translateY(12px)}}
+@keyframes cUp{from{opacity:.0;transform:translateY(22px)}}
+@keyframes cFade{from{opacity:0}}
+@keyframes cToast{from{opacity:0;transform:translate(-50%,14px)}}
+#list li{content-visibility:auto;contain-intrinsic-size:auto 60px} /* a lista de 600+ músicas só desenha o que está na tela */
+html{-webkit-tap-highlight-color:transparent}
 @media (prefers-reduced-motion:reduce){button:active{transform:none}}
 /* PDF do set: só a lista sai na impressão */
 @media print{
@@ -537,7 +550,9 @@ function setPlayed(id,on){const ids=playedIds();const i=ids.indexOf(id);if(on&&i
 
 /* ---------- biblioteca ---------- */
 function uid(){return Math.random().toString(36).slice(2,10)}
-function save(){store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui);if(window.calistoSync)calistoSync.changed()}
+let saveT=0;const saveNow=()=>{clearTimeout(saveT);saveT=0;store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui)};
+function save(){clearTimeout(saveT);saveT=setTimeout(saveNow,300);if(window.calistoSync)calistoSync.changed()} /* 19/11: gravar ~2 MB a cada toque travava o celular; agora junta os toques e grava logo depois */
+const flushSave=()=>{if(saveT)saveNow()};addEventListener('pagehide',flushSave);document.addEventListener('visibilitychange',()=>{if(document.hidden)flushSave()});
 // ponte para a sincronização (sync.js, só na versão oficial): ler o estado e aplicar o que veio da nuvem sem disparar save()
 window.calistoApp={state:()=>({songs,pls,prefs,ui}),
   apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x||x===n)return x||n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
@@ -625,9 +640,9 @@ function drawList(){
   if(view==='bib'){
     const np=playedIds().length;$('bibZero').hidden=!np;$('bibZero').textContent=`↺ ${np}`;$('bibZero').title=`Zerar as ${np} tocadas`;$('bibZero').setAttribute('aria-label',`Zerar as ${np} músicas tocadas`);
     const q=norm($('q').value.trim());
-    const r=LIB.filter(s=>!q||norm(s.title+' '+s.artist).includes(q));
+    const r=LIB.filter(s=>!q||norm(s.title+' '+s.artist).includes(q));const inPl={};pls.forEach(p=>p.items.forEach(id=>inPl[id]=(inPl[id]||0)+1));
     $('bibN').hidden=!LIB.length;$('bibN').textContent=q?`${r.length} de ${LIB.length}`:`${LIB.length} músicas`;
-    $('list').innerHTML=r.length?r.map(s=>{const n=pls.filter(p=>p.items.includes(s.id)).length;
+    $('list').innerHTML=r.length?r.map(s=>{const n=inPl[s.id]||0;
       return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
       :`<li class="empty">${songs.length?'Nada com essa busca.':'Nenhuma cifra ainda. Toque em <b>+ Música</b>: dá para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong.'}</li>`;
   }else if(view==='comp'){
@@ -654,7 +669,7 @@ function drawList(){
   }
 }
 function h(s){return String(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
-$('q').addEventListener('input',drawList);
+{let qT=0;$('q').addEventListener('input',()=>{clearTimeout(qT);qT=setTimeout(drawList,70)})}
 $('bibZero').addEventListener('click',()=>{playedIds().splice(0);store.set('played',played);drawList();toast('Tocadas zeradas')});
 $('lib').addEventListener('click',e=>{if(e.target.id==='spOut'&&window.calistoSpotify){calistoSpotify.disconnect();toast('Spotify desconectado neste aparelho');return}if(e.target.id==='plZero'){const p=plOf(curPl);if(p){p.items.forEach(id=>setPlayed(id,false));drawList();toast('Tocadas zeradas')}}});
 // arrastar a linha para a esquerda mostra o botão vermelho; tocar nele apaga
@@ -932,9 +947,10 @@ let chT;$('eK').addEventListener('input',drawChords);$('eX').addEventListener('i
 function closeEditor(){const wasRec=!!rec;recStop();dictStop();if(cur&&cur.fresh&&edFrom!=='comp'){const s=cur;if(!s.text||!s.text.trim()){songs=songs.filter(x=>x!==s);save();setTimeout(()=>{if(!$('stage').hidden)$('back').click()},0)}}if(edFrom==='comp'){const s=cur;if(s&&s.comp&&!wasRec&&!s.text&&!(s.recs&&s.recs.length)){songs=songs.filter(x=>x!==s);save()}edFrom='';setTimeout(drawList,0)}$('editor').hidden=true;const ed=$('editor');ed.style.top=ed.style.height=ed.style.bottom='';ed.classList.remove('kb')}
 // o editor acompanha a área visível: com o teclado aberto, a fileira de acordes fica colada em cima dele
 function fitEditor(){const ed=$('editor'),vv=window.visualViewport;if(ed.hidden||!vv)return;
-  ed.style.top=vv.offsetTop+'px';ed.style.height=vv.height+'px';ed.style.bottom='auto';ed.classList.toggle('kb',window.innerHeight-vv.height>120&&document.activeElement===$('eX'))}
+  const T=vv.offsetTop+'px',H=vv.height+'px';if(ed.style.top!==T)ed.style.top=T;if(ed.style.height!==H)ed.style.height=H;if(ed.style.bottom!=='auto')ed.style.bottom='auto';
+  const kb=window.innerHeight-vv.height>120&&document.activeElement===$('eX');if(ed.classList.contains('kb')!==kb)ed.classList.toggle('kb',kb)}
 function fitModal(){const m=$('modal'),vv=window.visualViewport;if(!vv)return;const kb=window.innerHeight-vv.height>120;if(m.hidden||!kb){m.style.top=m.style.height=m.style.bottom='';return}m.style.top=vv.offsetTop+'px';m.style.height=vv.height+'px';m.style.bottom='auto'} /* a janela encolhe junto com o teclado: o resultado da busca nunca fica escondido */
-if(window.visualViewport){visualViewport.addEventListener('resize',()=>{fitEditor();fitModal()});visualViewport.addEventListener('scroll',()=>{fitEditor();fitModal()})}
+if(window.visualViewport){let vr=0;const vf=()=>{if(vr)return;vr=requestAnimationFrame(()=>{vr=0;fitEditor();fitModal()})};visualViewport.addEventListener('resize',vf);visualViewport.addEventListener('scroll',vf)} /* no máximo uma vez por quadro */
 // celular: a fileira de acordes vira coluna à direita do texto (dentro do app do Claude o iPhone não informa a altura do teclado)
 function placeChords(){const mob=window.innerWidth<=560&&inFrame; /* fora do app do Claude (versão oficial) os acordes ficam colados no teclado */const col=$('eCol'),dock=$('eDock');
   if(mob){if($('eKb').parentNode!==col)col.prepend($('eKb'));if($('eCh').parentNode!==col)col.append($('eCh'))}
