@@ -31,10 +31,13 @@ async function tokenCall(body) {
 async function access() {
   if (!tok) return null;
   if (Date.now() < tok.exp) return tok.a;
-  try { await tokenCall({ grant_type: 'refresh_token', refresh_token: tok.r }); return tok.a; } catch (e) { keep(tok = null); return null; }
+  // 20/11: só desconecta se o Spotify recusar o acesso (erro 400/401). Sem internet (no show), mantém a conexão para depois
+  try { await tokenCall({ grant_type: 'refresh_token', refresh_token: tok.r }); return tok.a; } catch (e) { if (/^token 40[01]$/.test(e.message)) keep(tok = null); return null; }
 }
+// conectado mas sem internet: avisa em vez de mandar para a página de login do Spotify
+async function pronto(id) { if (await access()) return true; if (tok) app.toast('Sem conexão com o Spotify agora. Tenta de novo com internet.'); else connect(id); return false; }
 async function api(path, opt = {}) {
-  const a = await access(); if (!a) throw Object.assign(new Error('sem login'), { login: true });
+  const a = await access(); if (!a) throw Object.assign(new Error(tok ? 'sem rede' : 'sem login'), { login: !tok });
   for (let tent = 0; tent < 4; tent++) {
     const r = await fetch('https://api.spotify.com/v1' + path, Object.assign({}, opt, { headers: Object.assign({ Authorization: 'Bearer ' + a, 'Content-Type': 'application/json' }, opt.headers || {}) }));
     if (r.status === 429) { await new Promise(ok => setTimeout(ok, (+r.headers.get('Retry-After') || 1) * 1000 + 300)); continue; }
@@ -145,7 +148,7 @@ const avisoTrocas = f => f.length ? `<div style="border:1px solid #1ed760;border
 // tela "Conferir no Spotify": cada música do set com a faixa escolhida, e o botão Trocar
 const escH = x => String(x || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 async function conferir(p) {
-  if (!(await access())) { connect(p.id); return; }
+  if (!(await pronto(p.id))) return;
   if (!/playlist-read-private/.test(tok.s || '')) { connect(p.id); return; }
   if (!(p.spotify && p.spotify.id)) { create(p); return; }
   app.toast('Lendo a playlist no Spotify…');
@@ -221,7 +224,7 @@ function perguntaVinculo(p, novas) {
 const refazer = id => () => { const go = () => { if (rodando) return setTimeout(go, 500); const q = app.state().pls.find(x => x.id === id); if (q) create(q, { semAprender: true }); }; go(); };
 async function create(p, opt = {}) {
   if (rodando) return; if (!p.items.length) { app.toast('Playlist vazia'); return; }
-  if (!(await access())) { connect(p.id); return; }
+  if (!(await pronto(p.id))) return;
   if (p.spotify && p.spotify.id && !/playlist-read-private/.test(tok.s || '')) { connect(p.id); return; } // precisa da permissão nova uma vez
   // composições suas ainda sem decisão: pergunta antes de montar (uma vez por música)
   if (!opt.jaPerguntou) { const S0 = app.state(), novas = p.items.map(id => S0.songs.find(x => x.id === id)).filter(s => s && (s.fin || s.comp) && !s.sp && !vSet(p, s));
@@ -264,6 +267,6 @@ async function create(p, opt = {}) {
   } finally { rodando = false; }
 }
 
-async function vincular(s) { /* usado de fora */ if (!(await access())) { connect(null); return; } escolher(null, s); }
+async function vincular(s) { /* usado de fora */ if (!(await pronto(null))) return; escolher(null, s); }
 window.calistoSpotify = { create, conferir, vincular, connected: () => !!tok, connect: () => connect(null), disconnect: () => { keep(tok = null); app.redraw(); } };
 app.redraw();

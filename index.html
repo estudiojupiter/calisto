@@ -820,16 +820,14 @@ function show(){
   const cp=cur.capo||0,sh=tr-cp; /* capotraste: o tom é o que soa; a cifra mostra as formas (tom − capo) */
   const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cp?`Capo ${cp}${cur.key?` · formas de ${trKey(cur.key,sh)}`:''}`:'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
   $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;
-  toggleChrome(false);padTop();fitCols();
+  toggleChrome(false);padTop();
   $('sheet').scrollTop=0;$('prev').disabled=qi===0;$('next').disabled=qi>=queue.length-1;
   const nmOf=i=>{const s=songs.find(x=>x.id===queue[i]);return s?s.title:''};
   $('prevNm').textContent=qi>0?nmOf(qi-1):'';$('nextNm').textContent=qi<queue.length-1?nmOf(qi+1):'';
   clearTimeout(plTimer);const id=cur.id;plTimer=setTimeout(()=>{setPlayed(id,true);if(cur&&cur.id===id)$('ttl').textContent='✓ '+cur.title},15000); // aberta por 15 s = tocada
 }
-// computador: se a música cabe inteira em 2 colunas, mostra em 2 colunas (sem precisar rolar). No celular, sempre 1 coluna.
-function fitCols(){} /* as duas colunas agora são o botão ⫼ (classe .cols); a regra antiga saiu para não brigar com ela */
 function safeRender(song,t){try{return render(song,t)}catch(e){console.warn('Calisto: cifra com formato estranho',e);return `<pre style="white-space:pre-wrap;font:inherit">${h(song.text||'')}</pre>`}}
-let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!$('stage').hidden){padTop();fitCols()}},150)});
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(()=>{if(!$('stage').hidden)padTop()},150)});
 function setTr(n){tr=((n%12)+12)%12;if(tr>6)tr-=12;const p=prefs[cur.id]=prefs[cur.id]||{};
   if(origView)tmpTr=tr; // vendo o original: o ajuste é só de momento, não salva
   else if(singer){p.v=p.v||{};p.v[singer]=tr}
@@ -843,8 +841,8 @@ $('kLab').addEventListener('click',()=>{stopScroll();
       const y=$('sheet').scrollTop;show();$('sheet').scrollTop=y;
       toast(sg==='__orig'?`Tom original: ${cur.key||'—'}`:sg==='__pl'?'Tom da playlist':sg?(hasSg(cur.id,sg)?`Tom de ${sg}`:`${sg} ainda não tem tom nesta música: ajuste no ♭ ♯ que fica salvo`):'Meu tom')},
     sg=>sg==='__orig'?(cur.key||'—'):sg==='__pl'?(()=>{const pl=plOf(curPlay);return pl&&pl.tr&&pl.tr[cur.id]!=null?trKey(cur.key,pl.tr[cur.id]):'—'})():!sg?(prefs[cur.id]&&prefs[cur.id].tr!=null?trKey(cur.key,prefs[cur.id].tr)||'—':'—'):hasSg(cur.id,sg)?trKey(cur.key,getTr(cur.id,sg))||'—':'—',null,true,curPlay?(plOf(curPlay)||{}).name:null)});
-$('fUp').addEventListener('click',()=>{ui.font=Math.min(48,ui.font+2);save();$('sheet').style.fontSize=ui.font+'px';fitCols()});
-$('fDn').addEventListener('click',()=>{ui.font=Math.max(12,ui.font-2);save();$('sheet').style.fontSize=ui.font+'px';fitCols()});
+$('fUp').addEventListener('click',()=>{ui.font=Math.min(48,ui.font+2);save();$('sheet').style.fontSize=ui.font+'px'});
+$('fDn').addEventListener('click',()=>{ui.font=Math.max(12,ui.font-2);save();$('sheet').style.fontSize=ui.font+'px'});
 $('back').addEventListener('click',()=>{stopScroll();clearTimeout(plTimer);$('stage').hidden=true;$('lib').hidden=false;releaseWake();drawList()});
 $('next').addEventListener('click',()=>go(1));$('prev').addEventListener('click',()=>go(-1));
 function go(d){const n=qi+d;if(n<0||n>=queue.length)return;qi=n;origView=false;show()}
@@ -1004,12 +1002,12 @@ function openIdea(id,rec){const s=songs.find(x=>x.id===id);if(!s)return;cur=s;ed
   $('eNote').textContent='';$('eOrigRow').hidden=true;$('eMeta').open=false;eSummary();$('eRec').hidden=false;drawRecs();recUi();dictUi();
   $('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor();if(rec)recStart()}
 $('newIdea').addEventListener('click',()=>newIdea(false));$('recIdea').addEventListener('click',()=>newIdea(true));
-let rec=null;const REC_GAIN=5; /* +14 dB depois do compressor; o limitador segura os picos */
-async function recStart(){if(rec)return;const AC=window.AudioContext||window.webkitAudioContext;if(!navigator.mediaDevices||!AC){toast('Este navegador não grava áudio.');return}
+let rec=null,recReq=null;const REC_GAIN=5; /* +14 dB depois do compressor; o limitador segura os picos */
+async function recStart(){if(rec||recReq)return; /* 20/11: enquanto o microfone está sendo pedido, um 2º toque ou fechar o editor não deixa gravação fantasma com o microfone aberto */const AC=window.AudioContext||window.webkitAudioContext;if(!navigator.mediaDevices||!AC){toast('Este navegador não grava áudio.');return}
   dictStop();setSession('play-and-record');
-  const rac=new AC(); /* criado no toque: o iPhone exige */
-  try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    await rac.resume();
+  const rac=new AC(); /* criado no toque: o iPhone exige */const q=recReq={};let st=null;const drop=()=>{if(st)st.getTracks().forEach(t=>t.stop());try{rac.state!=='closed'&&rac.close().catch(()=>{})}catch(_){}};
+  try{st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+    if(q.off){drop();return}await rac.resume();if(q.off){drop();return}recReq=null;
     /* 19/11: grava o som cru do microfone em WAV, direto do áudio do aparelho. O caminho antigo (MediaRecorder) saía picotado ou vazio no iPhone */
     const src=rac.createMediaStreamSource(st),cp=rac.createDynamicsCompressor(),g=rac.createGain(),lim=rac.createDynamicsCompressor(),sp=rac.createScriptProcessor(4096,1,1),mute=rac.createGain();
     cp.threshold.value=-34;cp.knee.value=10;cp.ratio.value=5;cp.attack.value=.004;cp.release.value=.25;g.gain.value=REC_GAIN;
@@ -1020,8 +1018,8 @@ async function recStart(){if(rec)return;const AC=window.AudioContext||window.web
       for(let i=0;i<d.length;i++){let v=d[i];v=v>1?1:v<-1?-1:v;c[i]=v<0?v*32768:v*32767;const x=v<0?-v:v;if(x>pk)pk=x}
       r.bufs.push(c);r.len+=c.length;r.lvl=Math.max(pk,r.lvl*.8)};
     rec=r;r.timer=setInterval(recUi,100);recUi()}
-  catch(e){console.warn('gravar',e);try{rac.state!=='closed'&&rac.close().catch(()=>{})}catch(_){}toast('Sem acesso ao microfone. Libere o microfone para o Calisto e tente de novo.')}}
-function recStop(){if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);try{r.sp.onaudioprocess=null;r.sp.disconnect()}catch(e){}r.st.getTracks().forEach(t=>t.stop());try{r.rac.state!=='closed'&&r.rac.close().catch(()=>{})}catch(_){}recUi();recSave(r)}
+  catch(e){console.warn('gravar',e);drop();if(recReq===q)recReq=null;if(q.off)return;toast('Sem acesso ao microfone. Libere o microfone para o Calisto e tente de novo.')}}
+function recStop(){if(recReq){recReq.off=1;recReq=null}if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);try{r.sp.onaudioprocess=null;r.sp.disconnect()}catch(e){}r.st.getTracks().forEach(t=>t.stop());try{r.rac.state!=='closed'&&r.rac.close().catch(()=>{})}catch(_){}recUi();recSave(r)}
 function toWav(r){const n=r.len,b=new ArrayBuffer(44+n*2),v=new DataView(b),W=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
   W(0,'RIFF');v.setUint32(4,36+n*2,true);W(8,'WAVE');W(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,r.sr,true);v.setUint32(28,r.sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);W(36,'data');v.setUint32(40,n*2,true);
   let o=44;for(const c of r.bufs){new Int16Array(b,o,c.length).set(c);o+=c.length*2}return new Blob([b],{type:'audio/wav'})}

@@ -45,13 +45,18 @@ function show(s) {
 async function pull() {
   const first = st.uid !== user.uid;
   if (first) st = { uid: user.uid, last: 0, mlast: 0, h: {}, mh: '' };
+  // 20/11: busca tudo da nuvem ANTES de ler o aparelho. Antes lia o aparelho, esperava a rede e aplicava a foto velha:
+  // o que a pessoa criava ou editava durante a espera (ex.: "Gravar agora" quando o outro aparelho mandava o sinal) sumia.
+  const [snap, m] = await Promise.all([
+    getDocs(query(collection(db, 'users', user.uid, 'songs'), where('u', '>', Timestamp.fromMillis(Math.max(0, st.last - 60000))))),
+    getDoc(doc(db, 'users', user.uid, 'meta', 'state'))]);
+  // daqui até o fim não há mais espera: nada que a pessoa fizer se perde
   const S = app.state();
   let songs = S.songs.slice(), pls = S.pls, prefs = S.prefs, singers = (S.ui.singers || []).slice();
   let changed = false;
   const byId = new Map(songs.map(s => [s.id, s]));
   const remap = {}; // 1º login neste aparelho: a mesma música com outro id vira a da nuvem
 
-  const snap = await getDocs(query(collection(db, 'users', user.uid, 'songs'), where('u', '>', Timestamp.fromMillis(Math.max(0, st.last - 60000)))));
   const byTA = first ? new Map(songs.map(s => [kTA(s), s])) : null;
   snap.forEach(d => {
     const v = d.data(), id = d.id, ms = v.u ? v.u.toMillis() : 0;
@@ -76,7 +81,6 @@ async function pull() {
     const np = {}; for (const k in prefs) { const nk = r(k); np[nk] = Object.assign({}, prefs[k], np[nk] || {}); } prefs = np;
   }
 
-  const m = await getDoc(doc(db, 'users', user.uid, 'meta', 'state'));
   if (m.exists()) {
     const v = m.data(), ms = v.u ? v.u.toMillis() : 0;
     const localDirty = !first && hash(JSON.stringify(metaOf(S))) !== st.mh;
