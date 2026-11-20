@@ -17,7 +17,7 @@ const fb = initializeApp({
   appId: '1:669364392592:web:d47db6a90f572aa19f3e15'
 });
 const auth = getAuth(fb), db = getFirestore(fb);
-const app = window.calistoApp;
+const app = await (window.calistoReady || Promise.resolve(window.calistoApp)); // a biblioteca carrega do IndexedDB antes
 const btn = document.getElementById('cloudBtn');
 if (!app || !btn) throw new Error('Calisto: app não encontrado');
 btn.hidden = false;
@@ -30,6 +30,20 @@ let st = load();
 const keep = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} };
 function hash(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
 const metaOf = ({ pls, prefs, ui }) => ({ pls, prefs, singers: ui.singers || [] });
+// 20/11: playlists mexidas em dois aparelhos ao mesmo tempo: junta item por item, usando a última versão sincronizada como base.
+// Mudou só de um lado: vale esse lado. Mudou dos dois: vale o aparelho (é o que acabou de ser mexido). Apagada de um lado e intacta do outro: some.
+const J = x => JSON.stringify(x);
+function merge3(base, loc, rem) {
+  const byId = a => new Map((a || []).map(p => [p.id, p]));
+  const B = byId(base.pls), L = byId(loc.pls), R = byId(rem.pls), out = [];
+  const pick = (b, l, r) => { if (l && r) return J(l) === J(b) ? r : l; if (l) return b && J(l) === J(b) ? null : l; if (r) return b && J(r) === J(b) ? null : r; return null; };
+  for (const p of loc.pls || []) { const v = pick(B.get(p.id), p, R.get(p.id)); if (v) out.push(v); }
+  (rem.pls || []).forEach((p, i) => { if (L.has(p.id)) return; const v = pick(B.get(p.id), null, p); if (v) out.splice(Math.min(i, out.length), 0, v); });
+  const prefs = {}, bp = base.prefs || {}, lp = loc.prefs || {}, rp = rem.prefs || {};
+  for (const k of new Set([...Object.keys(lp), ...Object.keys(rp)])) { const v = pick(bp[k], lp[k], rp[k]); if (v) prefs[k] = v; }
+  const bs = J(base.singers || []), singers = J(loc.singers || []) === bs ? rem.singers : J(rem.singers || []) === bs ? loc.singers : [...new Set([...(loc.singers || []), ...(rem.singers || [])])];
+  return { pls: out, prefs, singers: singers || [] };
+}
 // cada aparelho tem um nome; quando um sobe mudança, avisa os outros pelo "sinal" (meta/ping) e eles puxam na hora
 const DEV = (() => { try { let d = localStorage.getItem('calisto.dev'); if (!d) { d = Math.random().toString(36).slice(2, 10); localStorage.setItem('calisto.dev', d); } return d; } catch (e) { return Math.random().toString(36).slice(2, 10); } })();
 const kTA = s => (s.title || '').trim().toLowerCase() + '|' + (s.artist || '').trim().toLowerCase();
@@ -91,8 +105,11 @@ async function pull() {
         pls = rm.pls.concat(pls.filter(p => !names.has(p.name.trim().toLowerCase())));
         prefs = Object.assign({}, prefs, rm.prefs);
         singers = [...new Set(rm.singers.concat(singers))];
-      } else { pls = rm.pls; prefs = rm.prefs; singers = rm.singers; st.mh = hash(JSON.stringify(rm)); }
+      } else { pls = rm.pls; prefs = rm.prefs; singers = rm.singers; st.mh = hash(JSON.stringify(rm)); st.mb = v.j; }
       changed = true;
+    } else if (ms > st.mlast && localDirty && st.mb) { // mexeu aqui e no outro aparelho: junta (e o push manda o resultado)
+      const mg = merge3(JSON.parse(st.mb), metaOf(S), JSON.parse(v.j));
+      pls = mg.pls; prefs = mg.prefs; singers = mg.singers; changed = true;
     }
     if (ms > st.mlast) st.mlast = ms;
   }
@@ -129,7 +146,7 @@ async function push() {
   if (metaDirty) {
     const b = writeBatch(db);
     b.set(doc(db, 'users', user.uid, 'meta', 'state'), { j: mj, u: serverTimestamp() });
-    await b.commit(); st.mh = mh; keep();
+    await b.commit(); st.mh = mh; st.mb = mj; keep();
   }
   try { await setDoc(doc(db, 'users', user.uid, 'meta', 'ping'), { dev: DEV, u: serverTimestamp() }); } catch (e) {}
   return ops.length + (metaDirty ? 1 : 0);

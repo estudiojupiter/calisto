@@ -5,7 +5,7 @@ const CLIENT_ID = 'bd7c607d7ed24777b3485e2518eb13c2';
 const REDIRECT = location.origin + location.pathname.replace(/index\.html$/, '');
 const SCOPES = 'playlist-modify-private playlist-modify-public playlist-read-private'; // ler a playlist serve para respeitar as versões trocadas no Spotify
 const KEY = 'calisto.spotify', PEND = 'calisto.spotify.pend';
-const app = window.calistoApp;
+const app = await (window.calistoReady || Promise.resolve(window.calistoApp));
 
 const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || null; } catch (e) { return null; } };
 const keep = t => { try { t ? localStorage.setItem(KEY, JSON.stringify(t)) : localStorage.removeItem(KEY); } catch (e) {} };
@@ -267,6 +267,25 @@ async function create(p, opt = {}) {
   } finally { rodando = false; }
 }
 
+// 20/11: limpeza: as playlists que o Calisto criou no Spotify (pelo vínculo guardado e pela descrição "Set montado no Calisto")
+async function listarCalisto() {
+  const ach = new Map();
+  for (const p of app.state().pls) if (p.spotify && p.spotify.id) ach.set(p.spotify.id, { id: p.spotify.id, nome: p.name });
+  try {
+    const me = await api('/me'); let url = '/me/playlists?limit=50';
+    for (let g = 0; url && g < 20; g++) { const r = await api(url);
+      for (const x of (r && r.items) || []) if (x && x.owner && x.owner.id === me.id && /Set montado no Calisto/.test(x.description || '')) ach.set(x.id, { id: x.id, nome: x.name });
+      url = r && r.next ? r.next.replace('https://api.spotify.com/v1', '') : null; }
+  } catch (e) { if (e.login) throw e; console.warn('Calisto spotify: listar', e); }
+  return [...ach.values()];
+}
+async function apagarCalisto(lista) {
+  let n = 0; const falhou = [];
+  for (const x of lista) { try { await api(`/playlists/${x.id}/followers`, { method: 'DELETE' }); n++; } catch (e) { if (e.status === 404) n++; else falhou.push(x.nome); } }
+  const ids = new Set(lista.map(x => x.id));
+  for (const p of app.state().pls) if (p.spotify && ids.has(p.spotify.id)) delete p.spotify;
+  app.save(); app.redraw(); return { n, falhou };
+}
 async function vincular(s) { /* usado de fora */ if (!(await pronto(null))) return; escolher(null, s); }
-window.calistoSpotify = { create, conferir, vincular, connected: () => !!tok, connect: () => connect(null), disconnect: () => { keep(tok = null); app.redraw(); } };
+window.calistoSpotify = { create, conferir, vincular, listarCalisto, apagarCalisto, pronto, connected: () => !!tok, connect: () => connect(null), disconnect: () => { keep(tok = null); app.redraw(); } };
 app.redraw();

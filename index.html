@@ -413,18 +413,46 @@ html{-webkit-tap-highlight-color:transparent}
 <div id="print"></div>
 
 <script>
-(function(){
+window.calistoReady=new Promise(ok=>window.__calistoOk=ok); /* sync.js e spotify.js esperam a biblioteca carregar */
+(async function(){
 "use strict";
 const $=id=>document.getElementById(id);
 const store={get(k,d){try{const v=localStorage.getItem('palco.'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('palco.'+k,JSON.stringify(v))}catch(e){toast('Sem espaço para salvar no navegador')}}};
-let songs=store.get('songs',[]);
-{const seen=new Set(),ok=songs.filter(s=>s&&s.id&&s.title&&!seen.has(s.id)&&seen.add(s.id));if(ok.length!==songs.length){songs=ok;store.set('songs',songs);window.calistoHealed=true}} // conserto (18/11): músicas vazias de um erro da sincronização           // {id,title,artist,key,capo,dur,text,orig?}
-let pls=store.get('playlists',null);       // [{id,name,items:[id],singer?}]
+/* 20/11: músicas, playlists e tons ficam no IndexedDB do aparelho (o localStorage tem só ~5 MB e a biblioteca já passava de 2,5 MB).
+   Regras: se existir cópia no localStorage, ela é a mais nova (só é escrita quando o IndexedDB falha) e vai para o IndexedDB.
+   Depois que a biblioteca mudou para o IndexedDB (marca palco.idb), o app nunca começa com a biblioteca vazia por erro de leitura. */
+const BIG=['songs','playlists','prefs'];
+const KV={db:null,
+  open(){return new Promise((ok,no)=>{let r;try{r=indexedDB.open('calisto-dados',1)}catch(e){no(e);return}const t=setTimeout(()=>no(new Error('demorou')),4000);
+    r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>{clearTimeout(t);const d=r.result;d.onclose=()=>{if(KV.db===d)KV.db=null};ok(d)};r.onerror=()=>{clearTimeout(t);no(r.error)}})},
+  async ready(){if(!this.db)this.db=await this.open();return this.db},
+  async tx(mode,fn){const d=await this.ready();return new Promise((ok,no)=>{const t=d.transaction('kv',mode),o=t.objectStore('kv'),res={};fn(o,res);t.oncomplete=()=>ok(res);t.onerror=t.onabort=()=>no(t.error)})},
+  getAll(keys){return this.tx('readonly',(o,res)=>keys.forEach(k=>{const q=o.get(k);q.onsuccess=()=>{res[k]=q.result}}))},
+  putAll(obj){return this.tx('readwrite',o=>{for(const k in obj)o.put(obj[k],k)})}};
+const hasLS=k=>{try{return localStorage.getItem('palco.'+k)!=null}catch(e){return false}};
+const MEM={};let useIDB=false;
+{const marked=hasLS('idb');let err=null;
+  for(let i=0;i<(marked?3:1)&&!useIDB;i++){try{const got=await KV.getAll(BIG);const mig={};
+    for(const k of BIG){if(hasLS(k)){mig[k]=MEM[k]=store.get(k,undefined)}else if(got[k]!==undefined)MEM[k]=got[k]}
+    if(Object.keys(mig).length){await KV.putAll(mig);const chk=await KV.getAll(Object.keys(mig));
+      if(Object.keys(mig).every(k=>JSON.stringify(chk[k])===JSON.stringify(mig[k]))){try{localStorage.setItem('palco.idb','1');Object.keys(mig).forEach(k=>localStorage.removeItem('palco.'+k))}catch(e){}}}
+    else if(!marked&&Object.keys(got).some(k=>got[k]!==undefined)){try{localStorage.setItem('palco.idb','1')}catch(e){}}
+    useIDB=true}catch(e){err=e;KV.db=null;console.warn('Calisto: IndexedDB',e)}}
+  if(!useIDB&&marked){document.body.innerHTML='<div style="padding:40px 24px;font:17px/1.5 -apple-system,system-ui,sans-serif;color:#f6e7cb;background:#120a07;min-height:100vh"><b style="font-size:20px">Não consegui abrir a sua biblioteca agora.</b><p>Ela continua guardada no aparelho. Feche o Calisto por completo e abra de novo.</p><button onclick="location.reload()" style="font:inherit;padding:12px 20px;border-radius:12px;border:0;background:#e8b46a;color:#1a0f0a;font-weight:700">Tentar de novo</button></div>';console.warn('Calisto: biblioteca no IndexedDB não abriu',err);return}}
+const bigGet=(k,d)=>useIDB?(MEM[k]!==undefined?MEM[k]:d):store.get(k,d);
+let bigSeq=0;
+function bigSet(o){if(!useIDB){for(const k in o)store.set(k,o[k]);return}const n=++bigSeq;
+  const ok=()=>{try{localStorage.setItem('palco.idb','1');for(const k in o)localStorage.removeItem('palco.'+k)}catch(e){}};
+  KV.putAll(o).then(ok).catch(e=>{console.warn('Calisto: gravar no IndexedDB',e);KV.db=null;if(n!==bigSeq)return; /* já tem gravação mais nova a caminho */
+    KV.putAll(o).then(ok).catch(()=>{if(n===bigSeq)for(const k in o)store.set(k,o[k])})})} /* se falhar de novo, guarda no localStorage (vale mais na próxima abertura) */
+let songs=bigGet('songs',[]);
+{const seen=new Set(),ok=songs.filter(s=>s&&s.id&&s.title&&!seen.has(s.id)&&seen.add(s.id));if(ok.length!==songs.length){songs=ok;bigSet({songs});window.calistoHealed=true}} // conserto (18/11): músicas vazias de um erro da sincronização           // {id,title,artist,key,capo,dur,text,orig?}
+let pls=bigGet('playlists',null);       // [{id,name,items:[id],singer?}]
 if(!pls){pls=[];const old=store.get('setlist',[]);if(old.length)pls.push({id:uid(),name:'Setlist',items:old})} // a setlist única antiga vira a 1ª playlist
-let prefs=store.get('prefs',{});           // {[id]:{tr (meu tom), v:{[cantora]:tr}, speed}}
+let prefs=bigGet('prefs',{});           // {[id]:{tr (meu tom), v:{[cantora]:tr}, speed}}
 pls.forEach(p=>{if(/^📦\s*/.test(p.name)){p.name=p.name.replace(/^📦\s*/,'');p.arch=true}}); // vindas do backup com 📦 viram arquivadas
 let ui=store.get('ui',{font:22,speed:4});if(!ui.singers)ui.singers=[];
-if(!ui.mig2){songs.forEach(s=>{if(s.fin&&!(s.sp&&s.sp.uri)&&s.dur)delete s.dur});ui.mig2=1;store.set('songs',songs);store.set('ui',ui)}
+if(!ui.mig2){songs.forEach(s=>{if(s.fin&&!(s.sp&&s.sp.uri)&&s.dur)delete s.dur});ui.mig2=1;bigSet({songs});store.set('ui',ui)}
 if(!ui.seed1){ui.seed1=1;store.set('ui',ui)} // versão pública: artistas são cadastradas no próprio aparelho
 const first=n=>String(n||'').split(/\s+/)[0];
 let mkColor='a';
@@ -452,7 +480,7 @@ function trKey(k,n){if(!k)return'';const m=k.match(/^([A-G])([#b]?)(.*)$/);if(!m
 if(!ui.capo1){ /* 19/11: o capo passou a transpor as formas. As 6 músicas que vieram do OnSong com capo estavam escritas nas formas: passam para o tom que soa, e no palco continuam iguais */
   const W={'A Thousand Years':3,'Kiss Me':3,"You're Still The One":1,'Deixa acontecer':2,'Revolution':2,'Shake up christmas':1};
   try{songs.forEach(s=>{if(s.capo&&W[s.title]===s.capo&&!s.capoOk){const fl=useFlats(trKey(s.key,s.capo));s.text=trText(s.text,s.capo,fl);if(s.orig!=null)s.orig=trText(s.orig,s.capo,fl);if(s.key)s.key=trKey(s.key,s.capo);s.capoOk=1}})}catch(e){console.warn('capo',e)}
-  ui.capo1=1;store.set('songs',songs);store.set('ui',ui)}
+  ui.capo1=1;bigSet({songs});store.set('ui',ui)}
 const mmss=s=>{s=Math.round(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const parseDur=v=>{v=String(v||'').trim();if(!v)return 0;const m=v.match(/^(\d+):(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];const n=parseFloat(v.replace(',','.'));return isFinite(n)?Math.round(n*60):0};
 
@@ -550,12 +578,12 @@ function setPlayed(id,on){const ids=playedIds();const i=ids.indexOf(id);if(on&&i
 
 /* ---------- biblioteca ---------- */
 function uid(){return Math.random().toString(36).slice(2,10)}
-let saveT=0;const saveNow=()=>{clearTimeout(saveT);saveT=0;store.set('songs',songs);store.set('playlists',pls);store.set('prefs',prefs);store.set('ui',ui)};
+let saveT=0;const saveNow=()=>{clearTimeout(saveT);saveT=0;bigSet({songs,playlists:pls,prefs});store.set('ui',ui)};
 function save(){clearTimeout(saveT);saveT=setTimeout(saveNow,300);if(window.calistoSync)calistoSync.changed()} /* 19/11: gravar ~2 MB a cada toque travava o celular; agora junta os toques e grava logo depois */
 const flushSave=()=>{if(saveT)saveNow()};addEventListener('pagehide',flushSave);document.addEventListener('visibilitychange',()=>{if(document.hidden)flushSave()});
 // ponte para a sincronização (sync.js, só na versão oficial): ler o estado e aplicar o que veio da nuvem sem disparar save()
 window.calistoApp={state:()=>({songs,pls,prefs,ui}),
-  apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x||x===n)return x||n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));store.set('songs',songs)}if(o.pls){pls=o.pls;store.set('playlists',pls)}if(o.prefs){prefs=o.prefs;store.set('prefs',prefs)}
+  apply(o){if(o.songs){const old=new Map(songs.map(s=>[s.id,s]));songs=o.songs.map(n=>{const x=old.get(n.id);if(!x||x===n)return x||n;for(const k in x)delete x[k];return Object.assign(x,n)});songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'))}if(o.pls)pls=o.pls;if(o.prefs)prefs=o.prefs;if(o.songs||o.pls||o.prefs)bigSet({songs,playlists:pls,prefs});
     if(o.singers){ui.singers=o.singers;store.set('ui',ui)}if(curPl&&!plOf(curPl)){curPl=null;if(view==='pl')view='pls'}drawList()},
   modal:(...a)=>modal(...a),close:()=>closeModal(),toast:(m,u)=>toast(m,u),snap:(l,a)=>snap(l,a),save:()=>save(),redraw:()=>drawList(),fmt:s=>fmtTotal(s)};
 // biblioteca convertida do backup do OnSong: músicas + playlists (com o tom de cada set). Não sobrescreve o que já existe.
@@ -1236,6 +1264,30 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tuner').hidden)
 document.addEventListener('visibilitychange',()=>{if(document.hidden){micStop();dpStop()}else if(!$('tuner').hidden&&ui.tp==='tn')micStart()});
 window.__palco={parse,render,isChordLine,trChord,trKey,setText};
 drawList();
+/* 20/11: áudios sem dono (ideia ou música apagada) saem do aparelho, alguns segundos depois de abrir */
+setTimeout(async()=>{try{if(!songs.length)return;const keep=new Set();songs.forEach(s=>(s.recs||[]).forEach(r=>keep.add(r.id)));
+  const d=await ADB.open();const keys=await new Promise((ok,no)=>{const q=d.transaction('rec','readonly').objectStore('rec').getAllKeys();q.onsuccess=()=>ok(q.result);q.onerror=()=>no(q.error)});
+  const gone=keys.filter(k=>!keep.has(k));for(const k of gone)await ADB.del(k);if(gone.length)console.log('Calisto: '+gone.length+' áudio(s) sem dono apagado(s)')}catch(e){console.warn('Calisto: limpar áudios',e)}},8000);
+/* 20/11: limpeza (endereço .../calisto/#limpeza): apaga composições e gravações de teste e as playlists que o Calisto criou no Spotify. Tudo com dois toques. */
+async function limpeza(){try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}
+  const C=songs.filter(s=>s.comp||s.fin),R=songs.filter(s=>(s.recs||[]).length);let nA=0;
+  try{const d=await ADB.open();nA=await new Promise(ok=>{const q=d.transaction('rec','readonly').objectStore('rec').count();q.onsuccess=()=>ok(q.result);q.onerror=()=>ok(0)})}catch(e){}
+  let spl=null;const sp=window.calistoSpotify;
+  const html=()=>`<p class="spnote">Use só para tirar testes. Cada botão pede dois toques.</p>
+    <div class="mlab">Composições (${C.length}) e gravações (${nA} neste aparelho)</div>
+    ${C.length?`<p class="spnote" style="max-height:30vh;overflow:auto">${C.map(s=>h(s.title)+(s.fin?' <small>(finalizada)</small>':'')).join(' · ')}</p>`:'<p class="spnote">Nenhuma composição.</p>'}
+    <button class="big" data-a="comp" style="color:var(--danger)"><span>Apagar ${C.length} composiç${C.length===1?'ão':'ões'} e todas as gravações</span><span></span></button>
+    <div class="mlab">Playlists que o Calisto criou no Spotify</div>
+    ${!sp?'<p class="spnote">O Spotify só funciona na versão instalada.</p>':spl==null?'<button class="big" data-a="spl"><span>Procurar no Spotify</span><span>›</span></button>':spl.length?`<p class="spnote" style="max-height:30vh;overflow:auto">${spl.map(x=>h(x.nome)).join(' · ')}</p><button class="big" data-a="spdel" style="color:var(--danger)"><span>Apagar ${spl.length} playlist${spl.length>1?'s':''} no Spotify</span><span></span></button>`:'<p class="spnote">Nenhuma playlist do Calisto no Spotify.</p>'}`;
+  const arm=b=>{if(b.dataset.arm&&Date.now()-b.dataset.arm<4000)return true;b.dataset.arm=Date.now();b.firstChild.textContent='Toque de novo para confirmar';return false};
+  modal('Limpeza',html(),async e=>{const b=e.target.closest('[data-a]');if(!b)return;const k=b.dataset.a;
+    if(k==='comp'){if(!arm(b))return;const ids=new Set(C.map(s=>s.id));snap('limpeza das composições');
+      songs=songs.filter(s=>!ids.has(s.id));songs.forEach(s=>{if(s.recs)delete s.recs});pls.forEach(p=>{p.items=p.items.filter(x=>!ids.has(x));if(p.tr)ids.forEach(x=>delete p.tr[x])});ids.forEach(x=>delete prefs[x]);save();drawList();
+      try{await ADB.tx('readwrite',o=>o.clear())}catch(e){}C.length=0;nA=0;$('mBody').innerHTML=html();toast(`${ids.size} composições e as gravações apagadas`)}
+    else if(k==='spl'){b.firstChild.textContent='Procurando…';try{if(!(await sp.pronto(null)))return;spl=await sp.listarCalisto()}catch(x){toast('Não deu para falar com o Spotify agora.');spl=null}$('mBody').innerHTML=html()}
+    else if(k==='spdel'){if(!arm(b))return;b.firstChild.textContent='Apagando…';const r=await sp.apagarCalisto(spl);spl=null;$('mBody').innerHTML=html();toast(r.falhou.length?`${r.n} apagadas; não deu: ${r.falhou.join(', ')}`:`${r.n} playlists apagadas no Spotify`)}},null,'Fechar')}
+const hashGo=()=>{if(location.hash==='#limpeza')setTimeout(limpeza,300)};addEventListener('hashchange',hashGo);hashGo();
+window.__calistoOk(window.calistoApp);
 })();
 </script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){const t=document.getElementById('toast');if(t){t.textContent='Calisto atualizado. Feche e abra para usar a versão nova.';t.hidden=false;setTimeout(()=>t.hidden=true,5000)}}})})}).catch(()=>{})})}</script>
