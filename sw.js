@@ -1,8 +1,8 @@
 // Calisto · funciona sem internet. Gerado por montar-site.py (não editar à mão).
-const CACHE='calisto-2b766c4923';
-const APP=["./", "index.html", "sync.js", "spotify.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/icon-maskable-512.png"];
+const CACHE='calisto-ff6ac1d452';
+const APP=["./", "index.html", "sync.2a791312.js", "spotify.7c6f104a.js", "manifest.webmanifest", "icons/icon-192.png", "icons/icon-512.png", "icons/apple-touch-icon.png", "icons/icon-maskable-512.png"];
 const FB=['app','auth','firestore'].map(m=>'https://www.gstatic.com/firebasejs/10.12.2/firebase-'+m+'.js').concat(['https://api.fontshare.com/v2/css?f[]=panchang@500,700&display=swap']);
-self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP))
+self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(APP.map(u=>new Request(u,{cache:'reload'})))) /* 'reload': ignora o cache do navegador, pega a versão nova de verdade */
   .then(()=>caches.open('calisto-libs-v1')).then(c=>Promise.all(FB.map(u=>c.match(u).then(m=>m||c.add(u).catch(()=>{}))))) // tenta guardar o login já na instalação; se falhar, guarda no primeiro uso
   .then(()=>self.skipWaiting()))});
 const LIBS='calisto-libs-v1'; // bibliotecas de fora (Firebase): ficam entre as versões, para o login funcionar sem internet logo depois de atualizar
