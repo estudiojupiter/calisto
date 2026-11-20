@@ -164,9 +164,12 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 #editor.kb .edock{padding-bottom:2px;padding-top:3px}
 #editor.kb #eRec,#editor.kb #eMeta,#editor.kb .enote{display:none} /* teclado aberto: mais espaço para escrever; feche o teclado para ver gravador e dados */
 #editor.kb .edock .mini{min-height:32px;padding:3px 9px}
-.earr{display:flex;gap:4px;flex:none}.earr .mini{min-width:38px;padding:4px 6px;font-size:.8rem}
+.edock{position:relative}
+.earr{position:absolute;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(100% + 8px);display:flex;gap:2px;padding:3px;border-radius:14px;background:var(--panel,#1b2130);border:1px solid var(--line);box-shadow:0 6px 18px rgba(0,0,0,.35);z-index:3}
+.earr .mini{min-width:46px;min-height:38px!important;padding:2px 8px;font-size:1.05rem;color:var(--ink);border:0;background:transparent}
+#editor::after{content:'';position:absolute;left:0;right:0;top:100%;height:100vh;background:var(--bg)} /* embaixo do editor (atrás da barra do teclado do iPhone) fica fundo liso, sem a letra do palco vazando */
 #editor:not(.kb) .earr{display:none} /* as setas só aparecem com o teclado aberto */
-#editor.kb #eX{margin-block:4px 2px}
+#editor.kb #eX{margin-block:4px 2px;padding-bottom:52px}
 .ehead{display:flex;gap:8px;align-items:center;padding-block:8px;padding-top:calc(8px + env(safe-area-inset-top,0px));border-bottom:1px solid var(--line)}
 .ehead b{flex:1;text-align:center}
 .efields{display:grid;grid-template-columns:2fr 2fr 1fr 1fr 1fr;gap:8px;padding-top:10px}
@@ -202,6 +205,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .rtime{font-variant-numeric:tabular-nums;color:#ff8a80;font-weight:700;min-width:3.2em}
 #dBtn.on{background:var(--sec);border-color:var(--sec);color:#06121d}
 .rlist{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+.rlvl{display:inline-block;width:64px;height:6px;border-radius:3px;background:var(--line);overflow:hidden;flex:none}.rlvl[hidden]{display:none}.rlvl i{display:block;height:100%;width:0;background:var(--accent);transition:width .08s}
 .rchip{flex:none;min-height:34px;padding:4px 10px;font-size:.82rem;display:inline-flex;gap:6px;align-items:center}
 .rchip small{color:var(--muted)}.rempty{color:var(--muted);font-size:.82rem;align-self:center}
 .idea .a{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -366,10 +370,10 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
       <div class="row" id="eOrigRow" hidden style="margin-top:8px"><button class="mini" id="eOrig">Restaurar a cifra como foi importada</button></div>
     </details>
     <p class="enote" id="eNote"></p>
-    <div id="eRec" hidden><div class="rrow"><button class="recb" id="rBtn"><span class="rdot"></span><span id="rLab">Gravar</span></button><span class="rtime" id="rTime"></span><button class="mini" id="dBtn">🎙 Ditar letra</button></div><div class="rlist" id="rList"></div></div>
+    <div id="eRec" hidden><div class="rrow"><button class="recb" id="rBtn"><span class="rdot"></span><span id="rLab">Gravar</span></button><span class="rtime" id="rTime"></span><span class="rlvl" id="rLvl" hidden><i></i></span><button class="mini" id="dBtn">🎙 Ditar letra</button></div><div class="rlist" id="rList"></div></div>
     <div class="ework"><textarea class="f" id="eX" wrap="off" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="Texto da cifra"></textarea><div id="eCol" aria-label="Acordes para inserir"></div></div>
   </div>
-  <div class="edock wrapx" id="eDock"><div class="earr" id="eArr" aria-label="Mover o cursor"><button class="mini" data-mv="L" aria-label="Cursor para a esquerda">◀</button><button class="mini" data-mv="U" aria-label="Linha de cima">▲</button><button class="mini" data-mv="D" aria-label="Linha de baixo">▼</button><button class="mini" data-mv="R" aria-label="Cursor para a direita">▶</button></div><div id="eCh" aria-label="Acordes para inserir"></div><button class="mini" id="eKb" hidden aria-label="Fechar o teclado">⌨︎ ↓</button></div>
+  <div class="edock wrapx" id="eDock"><div class="earr" id="eArr" aria-label="Mover o cursor"><button class="mini" data-mv="U" aria-label="Linha de cima">▲</button><button class="mini" data-mv="D" aria-label="Linha de baixo">▼</button></div><div id="eCh" aria-label="Acordes para inserir"></div><button class="mini" id="eKb" hidden aria-label="Fechar o teclado">⌨︎ ↓</button></div>
 </section>
 
 <div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTtl"><div class="mhead"><b id="mTtl"></b><button id="mClose">Pronto</button></div><div id="mBody"></div></div></div>
@@ -428,7 +432,14 @@ function useFlats(k){if(!k)return false;const m=k.match(/^([A-G][#b]?)(m?)/);if(
 function shift(root,acc,n,fl){const i=IDX[root+acc];if(i==null)return root+acc;return (fl?NOTES_F:NOTES_S)[(i+n+120)%12]}
 function trChord(t,n,fl){if(!n)return t;const m=t.match(CHORD);if(!m)return t;const pre=t[0]==='('?'(':'';const post=t.endsWith(')')&&!m[3].endsWith(')')&&!(m[6]||m[4])?'':'';
   return pre+shift(m[1],m[2],n,fl)+m[3]+(m[4]?'/'+shift(m[4],m[5],n,fl):m[6]?'/'+m[6]:'')+(m[4]||m[6]?(t.endsWith(')')?')':''):'')}
+function trText(txt,n,fl){fl=!!fl;if(!n)return txt;return txt.split('\n').map(line=>{
+  if(/\[[^\]]+\]/.test(line)&&!isChordLine(line))return line.replace(/\[([^\]]+)\]/g,(a,c)=>isChord(c)?`[${trChord(c,n,fl)}]`:a);
+  if(!isChordLine(line))return line;let out='';const re=/\S+/g;let m;while((m=re.exec(line))){const t=isChord(m[0])?trChord(m[0],n,fl):m[0];const col=Math.max(m.index,out.length?out.length+1:0);out=out.padEnd(col,' ')+t}return out}).join('\n')}
 function trKey(k,n){if(!k)return'';const m=k.match(/^([A-G])([#b]?)(.*)$/);if(!m)return k;const target=shift(m[1],m[2],n,false)+m[3];return trChord(k,n,useFlats(target))}
+if(!ui.capo1){ /* 19/11: o capo passou a transpor as formas. As 6 músicas que vieram do OnSong com capo estavam escritas nas formas: passam para o tom que soa, e no palco continuam iguais */
+  const W={'A Thousand Years':3,'Kiss Me':3,"You're Still The One":1,'Deixa acontecer':2,'Revolution':2,'Shake up christmas':1};
+  try{songs.forEach(s=>{if(s.capo&&W[s.title]===s.capo&&!s.capoOk){const fl=useFlats(trKey(s.key,s.capo));s.text=trText(s.text,s.capo,fl);if(s.orig!=null)s.orig=trText(s.orig,s.capo,fl);if(s.key)s.key=trKey(s.key,s.capo);s.capoOk=1}})}catch(e){console.warn('capo',e)}
+  ui.capo1=1;store.set('songs',songs);store.set('ui',ui)}
 const mmss=s=>{s=Math.round(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
 const parseDur=v=>{v=String(v||'').trim();if(!v)return 0;const m=v.match(/^(\d+):(\d{1,2})$/);if(m)return +m[1]*60+ +m[2];const n=parseFloat(v.replace(',','.'));return isFinite(n)?Math.round(n*60):0};
 
@@ -570,6 +581,7 @@ function cleanPaste(raw){let L=raw.replace(/\r\n?/g,'\n').replace(/ /g,' ').rep
     m=t.match(/^\[([^\]]{1,30})\]\s*(.*)$/);if(m&&!isChord(m[1].trim())){out.push(m[1].trim()+':');if(m[2].trim())out.push(m[2]);continue} /* [Refrão] D G  →  Refrão:  /  D G */
     out.push(l.replace(/\s+$/,''))}
   while(out.length&&!out[0].trim())out.shift();
+  if(+capo){const t=trText(out.join('\n'),+capo,useFlats(key));out.splice(0,out.length,...t.split('\n'))} /* site com capo mostra as formas; no Calisto a cifra fica no tom que soa */
   const meta=(key?`Key: ${key}\n`:'')+(capo?`Capo: ${capo}\n`:'');
   /* título e artista: as duas primeiras linhas, se não forem acorde nem parte */
   const hd=[];let k=0;while(k<out.length&&hd.length<2){const t=out[k].trim();if(!t){if(hd.length)break;k++;continue}if(isChordLine(t)||isHeader(t)||isTab(t))break;if(t.length>60)break;hd.push(t);k++}
@@ -790,8 +802,9 @@ function show(){
   $('kLab').innerHTML=`${h(k)}<small>${h(origView?'original':singer?first(singer):plMode&&ptr!=null?'playlist':mine?'meu tom':'original')}</small>`;$('spd').textContent=speedOf(cur.id);
   $('sheet').style.fontSize=ui.font+'px';
   const quem=origView?(tr?`Original ${cur.key}, ajustado agora para ${k} (não fica salvo)`:`Tom original: ${k}`):singer?(hasSg(cur.id,singer)?`Tom de ${singer}: ${k}`:`${singer} ainda sem tom salvo (mostrando ${mine?'o seu':'o original'}: ${k})`):plMode&&ptr!=null?`Tom da playlist: ${k}`:mine?`Meu tom: ${k}`:`Tom original: ${k}`;
-  const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cur.capo?`Capo ${cur.capo}`:'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
-  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${safeRender(cur,tr)}</div>`;
+  const cp=cur.capo||0,sh=tr-cp; /* capotraste: o tom é o que soa; a cifra mostra as formas (tom − capo) */
+  const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cp?`Capo ${cp}${cur.key?` · formas de ${trKey(cur.key,sh)}`:''}`:'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
+  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div></div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;
   toggleChrome(false);padTop();fitCols();
   $('sheet').scrollTop=0;$('prev').disabled=qi===0;$('next').disabled=qi>=queue.length-1;
   const nmOf=i=>{const s=songs.find(x=>x.id===queue[i]);return s?s.title:''};
@@ -903,7 +916,7 @@ $('more').addEventListener('click',()=>{stopScroll();const pl=()=>isPlayed(cur.i
     else if(k==='pl'){setPlayed(cur.id,!pl());$('ttl').textContent=(pl()?'✓ ':'')+cur.title;closeModal();toast(pl()?'Marcada como tocada':'Desmarcada')}},null,'Fechar')});
 // editar a cifra na hora (ensaio): muda o texto salvo da música; a transposição continua guardada à parte
 $('edit').addEventListener('click',()=>{stopScroll();edFrom='';$('eRec').hidden=!(cur.recs&&cur.recs.length);if(!$('eRec').hidden){drawRecs();recUi();dictUi()}$('eTtl').textContent='Editar cifra';$('eT').value=cur.title;$('eA').value=cur.artist;$('eK').value=cur.key;$('eC').value=cur.capo||'';$('eD').value=cur.dur?mmss(cur.dur):'';$('eX').value=cur.text;
-  $('eNote').textContent=tr?`No palco você está em ${trKey(cur.key,tr)}; aqui a cifra aparece no tom original (${cur.key||'—'}). Edite no original: a transposição continua valendo.`:'';
+  $('eNote').textContent=[tr?`No palco você está em ${trKey(cur.key,tr)}; aqui a cifra aparece no tom original (${cur.key||'—'}). Edite no original: a transposição continua valendo.`:'',cur.capo?`Escreva os acordes no tom que soa: com capo ${cur.capo}, o palco mostra as formas.`:''].filter(Boolean).join(' ');
   $('eOrigRow').hidden=!cur.orig;$('eMeta').open=window.innerWidth>560;eSummary();$('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor()}); // no celular os dados ficam recolhidos e a cifra ocupa a tela
 // sugestões de acorde: campo harmônico do tom + acordes de fora que já aparecem na música (empréstimo modal etc.)
 function campo(key){const m=String(key||'').trim().match(/^([A-G][#b]?)(m(?!aj))?/);if(!m||IDX[m[1]]==null)return[];const r=IDX[m[1]],fl=useFlats(key);const N=i=>(fl?NOTES_F:NOTES_S)[(r+i)%12];
@@ -976,25 +989,32 @@ function openIdea(id,rec){const s=songs.find(x=>x.id===id);if(!s)return;cur=s;ed
   $('editor').hidden=false;$('eX').scrollTop=0;placeChords();drawChords();fitEditor();if(rec)recStart()}
 $('newIdea').addEventListener('click',()=>newIdea(false));$('recIdea').addEventListener('click',()=>newIdea(true));
 let rec=null;const REC_GAIN=5; /* +14 dB depois do compressor; o limitador segura os picos */
-async function recStart(){if(rec)return;if(!navigator.mediaDevices||!window.MediaRecorder){toast('Este navegador não grava áudio.');return}
+async function recStart(){if(rec)return;const AC=window.AudioContext||window.webkitAudioContext;if(!navigator.mediaDevices||!AC){toast('Este navegador não grava áudio.');return}
   dictStop();setSession('play-and-record');
-  const AC=window.AudioContext||window.webkitAudioContext,rac=AC?new AC():null; /* criado no toque: o iPhone exige */
+  const rac=new AC(); /* criado no toque: o iPhone exige */
   try{const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    let out=st;
-    if(rac){try{await rac.resume();const src=rac.createMediaStreamSource(st),cp=rac.createDynamicsCompressor(),g=rac.createGain(),lim=rac.createDynamicsCompressor(),dst=rac.createMediaStreamDestination();
-      cp.threshold.value=-34;cp.knee.value=10;cp.ratio.value=5;cp.attack.value=.004;cp.release.value=.25;g.gain.value=REC_GAIN;
-      lim.threshold.value=-2;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.1;
-      src.connect(cp).connect(g).connect(lim).connect(dst);out=dst.stream}catch(e){console.warn('ganho',e)}}
-    const mime=['audio/mp4','audio/webm;codecs=opus','audio/webm'].find(m=>MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(m))||'';
-    const mr=new MediaRecorder(out,mime?{mimeType:mime}:{});const r={mr,chunks:[],t0:Date.now(),st,rac,song:cur};
-    mr.ondataavailable=e=>{if(e.data&&e.data.size)r.chunks.push(e.data)};mr.onstop=()=>recSave(r);mr.start(1000);rec=r;r.timer=setInterval(recUi,250);recUi()}
-  catch(e){try{rac&&rac.close().catch(()=>{})}catch(_){}toast('Sem acesso ao microfone. Libere o microfone para o Calisto e tente de novo.')}}
-function recStop(){if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);try{r.mr.stop()}catch(e){}r.st.getTracks().forEach(t=>t.stop());setTimeout(()=>{try{r.rac&&r.rac.state!=='closed'&&r.rac.close().catch(()=>{})}catch(_){}},800);recUi()}
-async function recSave(r){const blob=new Blob(r.chunks,{type:r.mr.mimeType||r.chunks[0]&&r.chunks[0].type||'audio/mp4'});if(!blob.size){toast('A gravação saiu vazia.');return}
-  const id=uid(),dur=Math.max(1,Math.round((Date.now()-r.t0)/1000)),s=r.song;
-  try{await ADB.put(id,blob)}catch(e){toast('Não deu para guardar o áudio neste aparelho.');return}
-  s.recs=s.recs||[];const n=s.recs.length+1;s.recs.push({id,name:`Gravação ${n}`,dur,t:Date.now(),mime:blob.type});s.mt=Date.now();save();if(cur===s)drawRecs();toast(`Gravação ${n} guardada (${mmss(dur)})`)}
-function recUi(){const on=!!rec;$('rBtn').classList.toggle('on',on);$('rLab').textContent=on?'Parar':'Gravar';$('rTime').textContent=on?mmss(Math.round((Date.now()-rec.t0)/1000)):''}
+    await rac.resume();
+    /* 19/11: grava o som cru do microfone em WAV, direto do áudio do aparelho. O caminho antigo (MediaRecorder) saía picotado ou vazio no iPhone */
+    const src=rac.createMediaStreamSource(st),cp=rac.createDynamicsCompressor(),g=rac.createGain(),lim=rac.createDynamicsCompressor(),sp=rac.createScriptProcessor(4096,1,1),mute=rac.createGain();
+    cp.threshold.value=-34;cp.knee.value=10;cp.ratio.value=5;cp.attack.value=.004;cp.release.value=.25;g.gain.value=REC_GAIN;
+    lim.threshold.value=-2;lim.knee.value=0;lim.ratio.value=20;lim.attack.value=.001;lim.release.value=.1;mute.gain.value=0;
+    src.connect(cp).connect(g).connect(lim).connect(sp);sp.connect(mute).connect(rac.destination);
+    const r={bufs:[],len:0,sr:rac.sampleRate,t0:Date.now(),st,rac,sp,song:cur,lvl:0};
+    sp.onaudioprocess=e=>{if(rec!==r)return;const d=e.inputBuffer.getChannelData(0),c=new Int16Array(d.length);let pk=0;
+      for(let i=0;i<d.length;i++){let v=d[i];v=v>1?1:v<-1?-1:v;c[i]=v<0?v*32768:v*32767;const x=v<0?-v:v;if(x>pk)pk=x}
+      r.bufs.push(c);r.len+=c.length;r.lvl=Math.max(pk,r.lvl*.8)};
+    rec=r;r.timer=setInterval(recUi,100);recUi()}
+  catch(e){console.warn('gravar',e);try{rac.state!=='closed'&&rac.close().catch(()=>{})}catch(_){}toast('Sem acesso ao microfone. Libere o microfone para o Calisto e tente de novo.')}}
+function recStop(){if(!rec)return;const r=rec;rec=null;clearInterval(r.timer);try{r.sp.onaudioprocess=null;r.sp.disconnect()}catch(e){}r.st.getTracks().forEach(t=>t.stop());try{r.rac.state!=='closed'&&r.rac.close().catch(()=>{})}catch(_){}recUi();recSave(r)}
+function toWav(r){const n=r.len,b=new ArrayBuffer(44+n*2),v=new DataView(b),W=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+  W(0,'RIFF');v.setUint32(4,36+n*2,true);W(8,'WAVE');W(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,r.sr,true);v.setUint32(28,r.sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);W(36,'data');v.setUint32(40,n*2,true);
+  let o=44;for(const c of r.bufs){new Int16Array(b,o,c.length).set(c);o+=c.length*2}return new Blob([b],{type:'audio/wav'})}
+async function recSave(r){if(r.len<r.sr*.5){toast('A gravação saiu vazia. Toque em Gravar e espere o relógio andar.');return}
+  const blob=toWav(r);r.bufs=[];const id=uid(),dur=Math.max(1,Math.round(r.len/r.sr)),s=r.song;
+  try{await ADB.put(id,blob)}catch(e){toast('Não deu para guardar o áudio neste aparelho (pouco espaço?).');return}
+  s.recs=s.recs||[];const n=s.recs.length+1;s.recs.push({id,name:`Gravação ${n}`,dur,t:Date.now(),mime:blob.type});s.mt=Date.now();save();if(cur===s&&!$('editor').hidden)drawRecs();toast(`Gravação ${n} guardada (${mmss(dur)})`)}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&rec)recStop()}); /* saiu do app no meio: para e guarda o que já gravou */
+function recUi(){const on=!!rec;$('rBtn').classList.toggle('on',on);$('rLab').textContent=on?'Parar':'Gravar';$('rTime').textContent=on?mmss(Math.round(rec.len/rec.sr)):'';$('rLvl').hidden=!on;if(on)$('rLvl').firstChild.style.width=Math.min(100,Math.round(Math.sqrt(rec.lvl)*100))+'%'}
 $('rBtn').addEventListener('click',()=>rec?recStop():recStart());
 function drawRecs(){const R=(cur&&cur.recs)||[];$('rList').innerHTML=R.length?R.map(r=>`<button class="rchip" data-rec="${r.id}">▶ ${h(r.name)} <small>${mmss(r.dur)}</small></button>`).join(''):'<span class="rempty">Nenhuma gravação ainda. Toque em Gravar e cante a ideia.</span>'}
 $('rList').addEventListener('click',e=>{const b=e.target.closest('[data-rec]');if(!b)return;const r=(cur.recs||[]).find(x=>x.id===b.dataset.rec);if(r)recMenu(cur,r)});
@@ -1006,7 +1026,7 @@ async function recMenu(s,r){let blob=null;try{blob=await ADB.get(r.id)}catch(e){
     <button class="big" data-a="del" style="color:var(--danger)"><span>Apagar gravação</span><span></span></button>`;
   modal(r.name,html(),async e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
     if(k==='ren'){const v=$('rName').value.trim();if(v){r.name=v;save();drawRecs();$('mTtl').textContent=v;toast('Renomeada')}}
-    else if(k==='share'){const ext=/mp4|m4a/.test(blob.type)?'m4a':'webm',file=new File([blob],`${s.title} - ${r.name}.${ext}`.replace(/[\\/:*?"<>|]/g,'-'),{type:blob.type});
+    else if(k==='share'){const ext=/wav/.test(blob.type)?'wav':/mp4|m4a/.test(blob.type)?'m4a':'webm',file=new File([blob],`${s.title} - ${r.name}.${ext}`.replace(/[\\/:*?"<>|]/g,'-'),{type:blob.type});
       if(navigator.canShare&&navigator.canShare({files:[file]}))navigator.share({files:[file],title:r.name}).catch(()=>{});
       else{const l=document.createElement('a');l.href=url;l.download=file.name;document.body.append(l);l.click();l.remove()}}
     else if(k==='del'){if(!(a.dataset.arm&&Date.now()-a.dataset.arm<3000)){a.dataset.arm=Date.now();a.firstChild.textContent='Toque de novo para apagar';return}
