@@ -1300,7 +1300,7 @@ $('tTun').addEventListener('click',tunerOpen);$('tnClose').addEventListener('cli
 $('tnAdn').addEventListener('click',()=>{ui.a4=Math.max(430,tnA()-1);store.set('ui',ui);tnDrawA();if(typeof dpDraw==='function')dpDraw()});$('tnAup').addEventListener('click',()=>{ui.a4=Math.min(450,tnA()+1);store.set('ui',ui);tnDrawA();if(typeof dpDraw==='function')dpDraw()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('tuner').hidden)tunerClose()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){micStop();dpStop()}else if(!$('tuner').hidden&&ui.tp==='tn')micStart()});
-window.__palco={parse,render,isChordLine,trChord,trKey,setText};
+window.__palco={parse,render,isChordLine,trChord,trKey,setText,recebido};
 drawList();
 /* 20/11: áudios sem dono (ideia ou música apagada) saem do aparelho, alguns segundos depois de abrir */
 setTimeout(async()=>{try{if(!songs.length)return;const keep=new Set();songs.forEach(s=>(s.recs||[]).forEach(r=>keep.add(r.id)));
@@ -1334,12 +1334,66 @@ function logo(svg){const NS='http://www.w3.org/2000/svg',CR='#f6e7cb';svg.innerH
 const drawLogos=()=>document.querySelectorAll('svg.lg').forEach(x=>{if(x.getBoundingClientRect().width||!x.closest('[hidden]'))logo(x)});
 (document.fonts&&document.fonts.load?document.fonts.load('500 64px Panchang'):Promise.resolve()).then(drawLogos,drawLogos);
 /* abertura: só na primeira vez (biblioteca vazia); depois o app abre direto */
-function abertura(force){if(!force&&(ui.ab1||songs.length)){offerTour();return}$('abertura').hidden=false;drawLogos();
+function abertura(force){if(location.hash==='#receber'||location.hash==='#limpeza')return;if(!force&&(ui.ab1||songs.length)){offerTour();return}$('abertura').hidden=false;drawLogos();
   const fim=()=>{$('abertura').hidden=true;ui.ab1=1;store.set('ui',ui);offerTour()};
   $('abSem').onclick=fim;$('abEntrar').onclick=()=>{fim();const b=$('cloudBtn');if(b&&!b.hidden)setTimeout(()=>b.click(),350)}}
 abertura(location.hash==='#abertura');
 {const c=$('carregando');if(c)c.remove()}
-const hashGo=()=>{if(location.hash==='#limpeza')setTimeout(limpeza,300)};addEventListener('hashchange',hashGo);hashGo();
+/* ---------- Botão Calisto (20/11): a janela abre em #receber e recebe as cifras da página onde o botão foi clicado ---------- */
+function receber(){try{history.replaceState(null,'',location.pathname)}catch(e){}
+  const op=window.opener;
+  if(!op){modal('Botão Calisto','<p class="spnote">Esta janela recebe as cifras do Botão Calisto. Para instalar o botão no computador, abra <b>estudiojupiter.github.io/calisto/botao.html</b>.</p>',null,null,'Fechar');return}
+  let got=false;const oi=setInterval(()=>{try{op.postMessage('calisto-pronto','*')}catch(e){}},400);setTimeout(()=>clearInterval(oi),30000);
+  modal('Botão Calisto','<p class="spnote" id="rcInfo">Esperando a música…</p>',null,null,'Cancelar');
+  addEventListener('message',e=>{if(e.source!==op||!e.data||typeof e.data!=='object')return;const d=e.data;
+    if(d.tipo==='calisto-oi'){clearInterval(oi);return}
+    if(d.tipo==='calisto-progresso'){clearInterval(oi);const i=$('rcInfo');if(i)i.textContent=`Lendo a lista “${String(d.nome||'').slice(0,80)}”… ${+d.n||0} de ${+d.de||0}`;return}
+    if(d.tipo==='calisto-import'&&!got){got=true;clearInterval(oi);try{recebido(d,op)}catch(x){console.warn('Botão Calisto',x);toast('Não deu para ler o que chegou.')}}})}
+const raizIdx=k=>{const m=String(k||'').match(/^([A-G][#b]?)/);return m?IDX[m[1]]:null};
+const passo=(de,para)=>{const a=raizIdx(de),b=raizIdx(para);if(a==null||b==null)return 0;let n=((b-a)%12+12)%12;return n>6?n-12:n};
+function recebido(d,op){
+  const str=(x,n)=>String(x==null?'':x).slice(0,n);
+  const vindas=(Array.isArray(d.songs)?d.songs:[]).slice(0,300).filter(x=>x&&typeof x.text==='string'&&x.text.trim()&&x.text.length<80000).map(x=>{
+    let key=str(x.key,8).trim(),capo=Math.max(0,Math.min(11,parseInt(x.capo,10)||0));
+    if(x.forma&&key){const c=passo(x.forma,key);capo=c<0?c+12:c} /* Cifra Club "Tom: Db (com forma de C)" = capo 1 nas formas de C */
+    const title=str(x.title,120).trim(),artist=str(x.artist,120).trim();
+    const raw=(title?title+'\n':'')+(title&&artist?artist+'\n':'')+(key?`Tom: ${key}\n`:'')+(capo?`Capo: ${capo}\n`:'')+'\n'+str(x.text,80000);
+    const c=cleanPaste(raw),p=parse(c.text,'');if(title)p.title=title;if(artist)p.artist=artist;if(!p.title)p.title='Nova música';
+    const ex=songs.find(s=>!s.comp&&norm(s.title)===norm(p.title)&&norm(s.artist)===norm(p.artist));
+    return {p,ex,tomLista:str(x.tomLista,4),soLetra:!!x.soLetra,selecao:!!x.selecao}});
+  if(!vindas.length){modal('Botão Calisto','<p class="spnote">Não chegou nenhuma cifra. Volte à página e tente de novo (ou selecione a cifra com o mouse antes de clicar).</p>',null,null,'Fechar');return}
+  const lista=d.lista&&typeof d.lista==='object'?{nome:str(d.lista.nome,80).trim()||'Lista do Cifra Club'}:null;
+  const temTomLista=!!lista&&vindas.some(v=>v.tomLista&&passo(v.p.key,v.tomLista));
+  const st={tom:temTomLista?'lista':'manter',para:vindas[0].p.key||'',pl:lista?'nova':((ui.botao&&ui.botao.pl&&plOf(ui.botao.pl))?ui.botao.pl:'')};
+  const semConta=$('cloudBtn')&&!$('cloudBtn').hidden&&/Entrar/.test($('cloudBtn').textContent);
+  const KEYS=['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+  const html=()=>{const v0=vindas[0],menor=/m$/.test(v0.p.key||'');
+    return `<p class="spnote">Do ${h(str(d.site,40)||'site')}${lista?` · lista “${h(lista.nome)}”`:''}: ${nMus(vindas.length)}${(d.falhou||[]).length?` · não deu para ler: ${h((d.falhou||[]).slice(0,10).map(x=>str(x,60)).join(', '))}`:''}</p>
+    <ul class="list" style="max-height:30vh;overflow:auto;margin-bottom:10px">${vindas.slice(0,60).map(v=>`<li><div class="open"><div class="t">${h(v.p.title)}${v.ex?' <span class="badge">já tem</span>':''}</div><div class="a">${h(v.p.artist)}${v.soLetra?' · só a letra (sem acordes)':''}</div></div><span class="key">${h((v.tomLista&&st.tom==='lista'?v.tomLista:v.p.key)||'—')}</span></li>`).join('')}</ul>
+    ${vindas.some(v=>v.ex)?'<p class="spnote">As que você já tem não são trocadas; só entram na playlist.</p>':''}
+    ${vindas.some(v=>v.p.key)?`<div class="mlab">Tom</div><div class="chips"><button class="mini${st.tom==='manter'?' on':''}" data-o="tom:manter">Manter o original</button>${temTomLista?`<button class="mini${st.tom==='lista'?' on':''}" data-o="tom:lista">Tom da lista</button>`:''}${vindas.length===1?`<button class="mini${st.tom==='para'?' on':''}" data-o="tom:para">Transpor</button>`:''}</div>
+      ${st.tom==='para'?`<div class="chips" style="margin-top:6px">${KEYS.map(k=>k+(menor?'m':'')).map(k=>`<button class="mini${st.para===k?' on':''}" data-o="para:${k}">${k}</button>`).join('')}</div>`:''}`:''}
+    <div class="mlab">Entra em</div><div class="chips"><button class="mini${st.pl===''?' on':''}" data-o="pl:">Só na biblioteca</button>${lista?`<button class="mini${st.pl==='nova'?' on':''}" data-o="pl:nova">Nova playlist “${h(lista.nome)}”</button>`:''}${pls.filter(p=>!p.arch).slice(0,6).map(p=>`<button class="mini${st.pl===p.id?' on':''}" data-o="pl:${p.id}">${h(p.name)}</button>`).join('')}</div>
+    ${semConta?'<p class="spnote" style="margin-top:10px">Você não entrou na sua conta neste computador: a música fica só aqui e não vai para o celular. <button class="mini" data-o="entrar">Entrar</button></p>':''}
+    <div class="row" style="margin-top:12px"><button class="primary" data-o="ok" style="flex:1;min-height:46px">Adicionar ${nMus(vindas.length)}</button></div>`};
+  modal('Botão Calisto',html(),e=>{const b=e.target.closest('[data-o]');if(!b)return;const [k,v]=b.dataset.o.split(/:(.*)/s);
+    if(k==='tom'){st.tom=v;$('mBody').innerHTML=html();return}
+    if(k==='para'){st.para=v;$('mBody').innerHTML=html();return}
+    if(k==='pl'){st.pl=v||'';$('mBody').innerHTML=html();return}
+    if(k==='entrar'){closeModal();$('cloudBtn').click();return}
+    if(k!=='ok')return;
+    snap('Botão Calisto');const ids=[];let novas=0;
+    for(const x of vindas){let s=x.ex;if(!s){s=Object.assign({id:uid()},x.p);songs.push(s);novas++}ids.push(s.id);x.id=s.id;x.s=s}
+    let pl=null;if(st.pl==='nova'&&lista){pl={id:uid(),name:lista.nome,items:[]};pls.unshift(pl)}else if(st.pl)pl=plOf(st.pl);
+    if(pl){for(const id of ids)if(!pl.items.includes(id))pl.items.push(id)}
+    for(const x of vindas){let n=0;if(st.tom==='lista'&&x.tomLista)n=passo(x.s.key,x.tomLista);else if(st.tom==='para'&&vindas.length===1)n=passo(x.s.key,st.para);
+      if(!n)continue;if(pl&&st.tom==='lista'){pl.tr=pl.tr||{};pl.tr[x.id]=n}else{prefs[x.id]=prefs[x.id]||{};if(!x.ex||prefs[x.id].tr==null)prefs[x.id].tr=n}}
+    if(!lista)ui.botao={pl:st.pl&&st.pl!=='nova'?st.pl:''};
+    songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();closeModal();
+    try{op.postMessage({tipo:'calisto-ok',n:vindas.length},'*')}catch(e){}
+    if(pl){curPl=pl.id;view='pl';drawList()}else{view='bib';drawList();if(vindas.length===1)open([ids[0]],0,'')}
+    toast(`${novas} música${novas===1?' nova':'s novas'}${vindas.length-novas?` · ${vindas.length-novas} já tinha`:''}${pl?` · na playlist “${pl.name}”`:''}`,1)},null,'Cancelar')}
+const hashGo=()=>{if(location.hash==='#limpeza')setTimeout(limpeza,300);else if(location.hash==='#receber')setTimeout(receber,200)};addEventListener('hashchange',hashGo);hashGo();
 window.__calistoOk(window.calistoApp);
 })();
 </script>
