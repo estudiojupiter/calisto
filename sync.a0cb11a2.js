@@ -6,7 +6,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword,
   sendPasswordResetEmail, signOut } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import { getFirestore, collection, doc, getDoc, getDocs, query, where, writeBatch, serverTimestamp,
-  Timestamp, onSnapshot, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  Timestamp, onSnapshot, setDoc, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const fb = initializeApp({
   apiKey: 'AIzaSyBuAc6ADu1qf5RIIGPdY_oB_jHRGCB5WXs',
@@ -172,7 +172,14 @@ async function sync(manual) {
   }
 }
 
-window.calistoSync = { changed() { if (!user) return; clearTimeout(timer); timer = setTimeout(sync, 2000); }, now: () => sync(true) };
+// 20/11: sugestões dos testadores ficam na conta de cada um (users/{uid}/sugestoes); o Gui lê no console do Firebase
+async function sugestao(o) {
+  if (!user) throw Object.assign(new Error('sem login'), { login: true });
+  const ok = x => String(x == null ? '' : x).slice(0, 4000);
+  await addDoc(collection(db, 'users', user.uid, 'sugestoes'), { tipo: ok(o.tipo), texto: ok(o.texto), tela: ok(o.tela), aparelho: ok(navigator.userAgent), versao: ok(o.versao), email: user.email || '', u: serverTimestamp() });
+}
+window.calistoSync = { changed() { if (!user) return; clearTimeout(timer); timer = setTimeout(sync, 2000); }, now: () => sync(true),
+  sugestao, logado: () => !!user, entrar: () => loginBox(), perfil: () => perfilBox() };
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync(); });
 addEventListener('online', () => sync());
 
@@ -211,10 +218,12 @@ function accountBox() {
     <p style="margin:0 0 4px">${esc(user.email)}</p>
     <p style="color:var(--muted);margin:0 0 12px">${{ ok: 'Sincronizado', sync: 'Sincronizando…', off: 'Sem internet: salvo no aparelho' }[status] || ''} · última vez às ${t}</p>
     <button class="big" data-a="now">Sincronizar agora <span>›</span></button>
+    <button class="big" data-a="perfil">Sobre você <span>›</span></button>
     <button class="big" data-a="out">Sair desta conta <span>›</span></button>`,
   async e => {
     const a = e.target.closest('[data-a]'); if (!a) return;
     if (a.dataset.a === 'now') { app.close(); sync(true); }
+    if (a.dataset.a === 'perfil') { app.close(); setTimeout(perfilBox, 300); }
     if (a.dataset.a === 'out') { app.close(); await signOut(auth); app.toast('Saiu. As cifras continuam neste aparelho.'); }
   });
 }
@@ -231,4 +240,37 @@ function listen() {
     const v = d.data(); if (v && v.dev && v.dev !== DEV) { clearTimeout(timer); timer = setTimeout(sync, 400); }
   }, e => console.warn('Calisto ao vivo', e));
 }
-onAuthStateChanged(auth, u => { user = u; listen(); if (u) sync(); else show('out'); });
+// ---------- 20/11: "sobre você", uma vez, logo depois do primeiro login (pulável) ----------
+const PK = () => 'calisto.perfil.' + (user && user.uid);
+let perfilAtual = null;
+async function perfilBox() {
+  if (!user) return;
+  if (!perfilAtual) { try { const d = await getDoc(doc(db, 'users', user.uid, 'meta', 'perfil')); perfilAtual = d.exists() ? d.data() : {}; } catch (e) { perfilAtual = {}; } }
+  const P = Object.assign({ nome: '', faz: ['músico'], instrumento: '', onde: [], indicou: '', novidades: false }, perfilAtual);
+  const chips = (k, op) => op.map(o => `<button class="mini${(P[k] || []).includes(o) ? ' on' : ''}" data-ch="${k}:${o}">${o}</button>`).join('');
+  const html = () => `<p style="color:var(--muted);margin:0 0 10px">Leva 20 segundos. Tudo opcional.</p>
+    <label class="pf">Como quer ser chamado<input class="f" id="pfNome" value="${esc(P.nome)}" maxlength="60"></label>
+    <div class="pf">O que você faz<div class="chips">${chips('faz', ['músico', 'professor', 'produtor', 'compositor'])}</div></div>
+    <label class="pf">Instrumento<input class="f" id="pfInst" value="${esc(P.instrumento)}" maxlength="60" placeholder="Ex.: violão e voz"></label>
+    <div class="pf">Onde vai usar<div class="chips">${chips('onde', ['celular', 'iPad', 'computador'])}</div></div>
+    <label class="pf">Quem indicou<input class="f" id="pfInd" value="${esc(P.indicou)}" maxlength="60"></label>
+    <label class="pfchk"><input type="checkbox" id="pfNov" ${P.novidades ? 'checked' : ''}> Quero receber novidades do Calisto por e-mail (dá para sair quando quiser).</label>
+    <p style="color:var(--muted);font-size:.8rem;margin:8px 0 12px">Seus dados ficam na sua conta e servem só para melhorar o app. Para apagar, peça em “Mandar sugestão”. Lei Geral de Proteção de Dados (LGPD).</p>
+    <div style="display:flex;gap:8px"><button class="primary" data-a="ok" style="flex:1;min-height:46px">Salvar</button><button data-a="pular">Pular</button></div>`;
+  const ler = () => { P.nome = document.getElementById('pfNome').value.trim(); P.instrumento = document.getElementById('pfInst').value.trim(); P.indicou = document.getElementById('pfInd').value.trim(); P.novidades = document.getElementById('pfNov').checked; };
+  const grava = async (dados) => { try { localStorage.setItem(PK(), '1'); } catch (e) {} try { await setDoc(doc(db, 'users', user.uid, 'meta', 'perfil'), Object.assign({}, dados, { u: serverTimestamp() })); perfilAtual = dados; } catch (e) { console.warn('Calisto perfil', e); } };
+  app.modal('Sobre você', html(), async e => {
+    const c = e.target.closest('[data-ch]');
+    if (c) { ler(); const [k, v] = c.dataset.ch.split(':'); P[k] = (P[k] || []).includes(v) ? P[k].filter(x => x !== v) : [...(P[k] || []), v]; document.getElementById('mBody').innerHTML = html(); return; }
+    const a = e.target.closest('[data-a]'); if (!a) return;
+    if (a.dataset.a === 'pular') { app.close(); if (!perfilAtual || !Object.keys(perfilAtual).length) grava({ pulou: true }); return; }
+    ler(); app.close(); await grava({ nome: P.nome, faz: P.faz, instrumento: P.instrumento, onde: P.onde, indicou: P.indicou, novidades: P.novidades }); app.toast('Obrigado!');
+  }, null, 'Fechar');
+}
+async function perfilPrimeiraVez() {
+  try { if (localStorage.getItem(PK())) return; } catch (e) {}
+  try { const d = await getDoc(doc(db, 'users', user.uid, 'meta', 'perfil')); if (d.exists()) { perfilAtual = d.data(); try { localStorage.setItem(PK(), '1'); } catch (e) {} return; } } catch (e) { return; }
+  const tenta = (n) => { if (!user) return; if (document.getElementById('modal').hidden && document.getElementById('editor').hidden && (!document.getElementById('coach') || document.getElementById('coach').hidden)) perfilBox(); else if (n < 20) setTimeout(() => tenta(n + 1), 3000); };
+  setTimeout(() => tenta(0), 2500);
+}
+onAuthStateChanged(auth, u => { user = u; perfilAtual = null; listen(); if (u) { sync(); perfilPrimeiraVez(); } else show('out'); });
