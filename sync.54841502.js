@@ -179,7 +179,8 @@ async function sugestao(o) {
   await addDoc(collection(db, 'users', user.uid, 'sugestoes'), { tipo: ok(o.tipo), texto: ok(o.texto), tela: ok(o.tela), aparelho: ok(navigator.userAgent), versao: ok(o.versao), email: user.email || '', u: serverTimestamp() });
 }
 window.calistoSync = { changed() { if (!user) return; clearTimeout(timer); timer = setTimeout(sync, 2000); }, now: () => sync(true),
-  sugestao, logado: () => !!user, entrar: () => loginBox(), perfil: () => perfilBox() };
+  sugestao, logado: () => !!user, entrar: () => loginBox(), perfil: () => perfilBox(),
+  async spotifyEmail(m) { if (!user) return; try { await setDoc(doc(db, 'users', user.uid, 'meta', 'perfil'), { spotify: m, u: serverTimestamp() }, { merge: true }); if (perfilAtual) perfilAtual.spotify = m; } catch (e) {} } };
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') sync(); });
 addEventListener('online', () => sync());
 
@@ -246,7 +247,7 @@ let perfilAtual = null;
 async function perfilBox() {
   if (!user) return;
   if (!perfilAtual) { try { const d = await getDoc(doc(db, 'users', user.uid, 'meta', 'perfil')); perfilAtual = d.exists() ? d.data() : {}; } catch (e) { perfilAtual = {}; } }
-  const P = Object.assign({ nome: '', faz: ['músico'], instrumento: '', onde: [], indicou: '', novidades: false }, perfilAtual);
+  const P = Object.assign({ nome: '', faz: ['músico'], instrumento: '', onde: [], indicou: '', spotify: '', novidades: false }, perfilAtual);
   const chips = (k, op) => op.map(o => `<button class="mini${(P[k] || []).includes(o) ? ' on' : ''}" data-ch="${k}:${o}">${o}</button>`).join('');
   const html = () => `<p style="color:var(--muted);margin:0 0 10px">Leva 20 segundos. Tudo opcional.</p>
     <label class="pf">Como quer ser chamado<input class="f" id="pfNome" value="${esc(P.nome)}" maxlength="60"></label>
@@ -254,17 +255,18 @@ async function perfilBox() {
     <label class="pf">Instrumento<input class="f" id="pfInst" value="${esc(P.instrumento)}" maxlength="60" placeholder="Ex.: violão e voz"></label>
     <div class="pf">Onde vai usar<div class="chips">${chips('onde', ['celular', 'iPad', 'computador'])}</div></div>
     <label class="pf">Quem indicou<input class="f" id="pfInd" value="${esc(P.indicou)}" maxlength="60"></label>
+    <label class="pf">E-mail do seu Spotify <small>(para o Gui liberar o Spotify no Calisto)</small><input class="f" id="pfSpo" type="email" value="${esc(P.spotify)}" maxlength="120" placeholder="Opcional"></label>
     <label class="pfchk"><input type="checkbox" id="pfNov" ${P.novidades ? 'checked' : ''}> Quero receber novidades do Calisto por e-mail (dá para sair quando quiser).</label>
     <p style="color:var(--muted);font-size:.8rem;margin:8px 0 12px">Seus dados ficam na sua conta e servem só para melhorar o app. Para apagar, peça em “Mandar sugestão”. Lei Geral de Proteção de Dados (LGPD).</p>
     <div style="display:flex;gap:8px"><button class="primary" data-a="ok" style="flex:1;min-height:46px">Salvar</button><button data-a="pular">Pular</button></div>`;
-  const ler = () => { P.nome = document.getElementById('pfNome').value.trim(); P.instrumento = document.getElementById('pfInst').value.trim(); P.indicou = document.getElementById('pfInd').value.trim(); P.novidades = document.getElementById('pfNov').checked; };
+  const ler = () => { P.nome = document.getElementById('pfNome').value.trim(); P.instrumento = document.getElementById('pfInst').value.trim(); P.indicou = document.getElementById('pfInd').value.trim(); P.spotify = document.getElementById('pfSpo').value.trim(); P.novidades = document.getElementById('pfNov').checked; };
   const grava = async (dados) => { try { localStorage.setItem(PK(), '1'); } catch (e) {} try { await setDoc(doc(db, 'users', user.uid, 'meta', 'perfil'), Object.assign({}, dados, { u: serverTimestamp() })); perfilAtual = dados; } catch (e) { console.warn('Calisto perfil', e); } };
   app.modal('Sobre você', html(), async e => {
     const c = e.target.closest('[data-ch]');
     if (c) { ler(); const [k, v] = c.dataset.ch.split(':'); P[k] = (P[k] || []).includes(v) ? P[k].filter(x => x !== v) : [...(P[k] || []), v]; document.getElementById('mBody').innerHTML = html(); return; }
     const a = e.target.closest('[data-a]'); if (!a) return;
     if (a.dataset.a === 'pular') { app.close(); if (!perfilAtual || !Object.keys(perfilAtual).length) grava({ pulou: true }); return; }
-    ler(); app.close(); await grava({ nome: P.nome, faz: P.faz, instrumento: P.instrumento, onde: P.onde, indicou: P.indicou, novidades: P.novidades }); app.toast('Obrigado!');
+    ler(); app.close(); await grava({ nome: P.nome, faz: P.faz, instrumento: P.instrumento, onde: P.onde, indicou: P.indicou, spotify: P.spotify, novidades: P.novidades }); app.toast('Obrigado!');
   }, null, 'Fechar');
 }
 async function perfilPrimeiraVez() {

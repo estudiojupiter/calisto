@@ -369,6 +369,8 @@ html{-webkit-tap-highlight-color:transparent}
 .pf .f{font-size:16px}
 .pfchk{display:flex;gap:8px;align-items:flex-start;font-size:.9rem;margin-top:4px}
 .pfchk input{width:20px;height:20px;flex:none;margin:1px 0 0}
+#instalar{position:fixed;left:max(10px,env(safe-area-inset-left,0px));right:max(10px,env(safe-area-inset-right,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));z-index:30;display:flex;gap:8px;align-items:center;background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:10px 10px 10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.5);font-size:.9rem;line-height:1.4}
+#instalar>div{flex:1}#instalar .mini{min-height:34px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
@@ -762,7 +764,7 @@ function drawList(){
       :`<li class="empty"><div class="vazio">${qq?`<svg width="18" height="28" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Nada com essa busca</b>`:`<svg width="29" height="44" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>A primeira ideia começa aqui</b><span>Toque em <b>Gravar agora</b> para registrar uma melodia, ou em <b>+ Nova ideia</b> para começar pela letra.</span>`}</div></li>`;
   }else if(view==='spo'){
     const sp=window.calistoSpotify;const withL=pls.filter(p=>p.spotify&&p.spotify.url&&plMatch(p));
-    $('spNote').innerHTML=!sp?'O Spotify funciona na versão instalada do Calisto.':(sp.connected()?'Conectado ao Spotify. Para criar ou atualizar: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. <button class="mini" id="spOut">Desconectar</button>':'Para criar playlists no Spotify: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. Na primeira vez ele pede para entrar na sua conta do Spotify.');
+    $('spNote').innerHTML=!sp?'O Spotify funciona na versão instalada do Calisto.':(sp.connected()?'Conectado ao Spotify. Para criar ou atualizar: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. <button class="mini" id="spOut">Desconectar</button>':'Para criar playlists no Spotify: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. Na primeira vez ele pede para entrar na sua conta do Spotify. Enquanto o Calisto está em teste, o Gui precisa liberar o seu Spotify: coloque o e-mail dele em <b>☁︎ › Sobre você</b>.');
     $('list').innerHTML=withL.length?withL.map(p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${p.spotify.n||0} de ${p.items.length} no Spotify${p.spotify.miss&&p.spotify.miss.length?` · faltou ${p.spotify.miss.length}`:''}</div></div><a class="mini sp" href="${h(p.spotify.url)}" target="_blank" rel="noopener">Abrir</a><button class="mini" data-spshare="${p.id}">Link</button><button class="swdel" data-del="spl:${p.id}">Apagar do Spotify</button></li>`).join('')
       :'<li class="empty"><div class="vazio"><img src="img/lua-240.png" alt="A lua Calisto" class="luav"><b>Nenhuma playlist no Spotify ainda</b><span>Abra uma playlist, toque em <b>⋯ Mais</b> e depois em <b>Criar no Spotify</b>.</span></div></li>';
   }else if(view==='pls'){
@@ -1291,21 +1293,22 @@ const STEPS=[
  {t:'Bem-vindo ao ',x:'Tudo que gira em torno da sua música. Vou abrir as telas de verdade e apontar onde fica cada coisa. Use <b>Próximo</b> e <b>Voltar</b>; dá para sair quando quiser.',go:()=>toLib('bib'),brand:1},
  {el:'#tBib',t:'Biblioteca',x:'Todas as suas músicas. As abas de baixo levam às outras partes: Playlists, Spotify, Composição e Afinador.',go:()=>toLib('bib')},
  {el:'.qrow',t:'Busca e total',x:'Procure por nome da música ou do artista. Ao lado aparece quantas músicas você tem.',go:()=>toLib('bib')},
- {el:'#list li:not(.empty):not(.letra)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar; se errar, toque em <b>Desfazer</b> no aviso de baixo.',go:()=>toLib('bib')},
+ {el:'#list li:not(.empty):not(.letra)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar; se errar, toque em <b>Desfazer</b> no aviso de baixo. Música aberta no palco por 15 segundos fica <b>riscada</b> como tocada até o dia seguinte; segure a linha para marcar ou desmarcar.',go:()=>toLib('bib')},
  {el:'#fileBtn',t:'Adicionar músicas',x:'Cole uma cifra copiada de qualquer site (Cifra Club, Cifras, Ultimate Guitar), escreva do zero ou importe arquivos do OnSong.',go:()=>toLib('bib')},
+ {el:'#fileBtn',t:'Do Cifra Club, em 2 toques',x:'<b>No iPhone:</b> instale o atalho <b>Mandar pro Calisto</b> (no <b>?</b> › Ajuda). No Safari, abra a cifra, toque em <b>Compartilhar › Mandar pro Calisto</b> e aqui em <b>+ Música › Colar do atalho</b>. <b>No computador:</b> o <b>Botão Calisto</b> traz músicas e listas inteiras do Cifra Club de uma vez.',go:()=>toLib('bib')},
  {el:'#newPl',t:'Playlists',x:'Um set para cada show. A playlist que você mexe sobe para o topo; as antigas dá para arquivar.',go:()=>toLib('pls')},
  {el:'#list li:not(.empty)',t:'Dentro de uma playlist',x:'Toque numa música para começar o show dali. Lá dentro: <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b> (PDF, arquivar, Spotify).',go:()=>toLib('pls')},
- {el:'#sheet',t:'No palco',x:'Encoste na letra para começar ou pausar a rolagem. Segure numa linha para criar uma nota ou um marca-texto. No iPad deitado e no computador, a cifra abre em duas colunas.',go:toStage,need:firstSong},
+ {el:'#sheet',t:'No palco',x:'Toque na letra para começar a rolagem. Rolando, <b>um toque</b> só pausa (a cifra fica inteira) e <b>dois toques</b> pausam e mostram os botões; a faixa de cima também mostra. Segure numa linha para criar um lembrete ou um marca-texto. Linhas finas separam as partes da música.',go:toStage,need:firstSong},
  {el:'#tDn',el2:'#tUp',t:'Tom',x:'<b>♭</b> e <b>♯</b> mudam o tom meio em meio. Toque no tom do meio para escolher a artista ou voltar ao original.',go:toStage,need:firstSong},
  {el:'.spdg',t:'Velocidade',x:'<b>−</b> e <b>+</b> ajustam a velocidade da rolagem. Cada música lembra a sua.',go:toStage,need:firstSong},
- {el:()=>mob()?'#more':'#edit',t:'Editar e mais',x:'Corrija a cifra na hora. No celular, o <b>⋯</b> também tem tamanho da letra, afinador e <b>Tirar desta playlist</b>.',go:toStage,need:firstSong},
+ {el:()=>mob()?'#more':'#edit',t:'Editar e mais',x:'Corrija a cifra na hora. No celular, o <b>⋯</b> também tem tamanho da letra, <b>capo</b> (o tom que soa fica igual e os acordes mudam para a casa escolhida), marcar como tocada, afinador e <b>Tirar desta playlist</b>.',go:toStage,need:firstSong},
  {el:'#foot',t:'Próxima música',x:'As setas de baixo passam para a anterior ou a próxima do set, com o nome de cada uma.',go:toStage,need:firstSong},
  {el:'#recIdea',t:'Composição',x:'<b>Gravar agora</b> registra uma melodia na hora, sem procurar no gravador do celular. Os áudios ficam guardados neste aparelho.',go:()=>toLib('comp')},
  {el:'#newIdea',t:'Nova ideia',x:'Tela de escrita com gravador e <b>Ditar letra</b> (o texto aparece enquanto você fala). Com o teclado aberto, as setas andam com o cursor. Quando a música ficar pronta, use <b>✓ Finalizar</b> na lista para mandar para a Biblioteca.',go:()=>toLib('comp')},
  {el:'#tTun',t:'Afinador, metrônomo e diapasão',x:'Três ferramentas na mesma aba. O metrônomo continua tocando na cifra: um toque na bolinha pausa, dois toques desligam.',go:()=>toLib('bib')},
- {el:'#tSpo',t:'Spotify',x:'Mande qualquer playlist para o Spotify, sem mudar o link. Em <b>Conferir</b>, troque a versão de cada música, para todas as playlists ou só para uma. Composições suas não ganham faixa inventada.',go:()=>toLib('spo')},
- {el:'#cloudBtn',t:'Sua conta',x:'Entre para guardar tudo na nuvem. O que você muda no computador aparece no celular em segundos, e vice-versa.',go:()=>toLib('bib'),need:()=>!$('cloudBtn').hidden},
- {el:'#helpBtn',t:'Pronto!',x:'Este tour fica aqui no <b>?</b>, para quando quiser rever.',go:()=>toLib('bib'),end:1}];
+ {el:'#tSpo',t:'Spotify',x:'Mande qualquer playlist para o Spotify, sem mudar o link. Em <b>Conferir</b>, troque a versão de cada música, para todas as playlists ou só para uma. Composições suas não ganham faixa inventada. Enquanto o Calisto está em teste, o Gui precisa liberar o seu Spotify: coloque o e-mail dele em <b>☁︎ › Sobre você</b>.',go:()=>toLib('spo')},
+ {el:'#cloudBtn',t:'Sua conta',x:'Entre com e-mail e senha: tudo fica salvo na sua conta e se atualiza sozinho em todos os aparelhos. Use o <b>computador como aliado</b>: abra <b>estudiojupiter.github.io/calisto</b> lá, entre na mesma conta e organize cifras e playlists com teclado e tela grande; no celular aparece em segundos.',go:()=>toLib('bib'),need:()=>!$('cloudBtn').hidden},
+ {el:'#helpBtn',t:'Pronto!',x:'No <b>?</b> ficam este tour, o <b>Mandar sugestão</b> (fale direto com o Gui) e o Botão Calisto. O app se atualiza sozinho: quando aparecer o aviso de versão nova, é só fechar e abrir.',go:()=>toLib('bib'),end:1}];
 let cI=0,cList=[];
 const pick=sel=>{sel=typeof sel==='function'?sel():sel;if(!sel)return null;const el=document.querySelector(sel);if(!el)return null;const r=el.getBoundingClientRect();return r.width&&r.height?r:null};
 function cPlace(){const st=cList[cI];if(!st)return;let r=pick(st.el);if(r&&st.el2){const r2=pick(st.el2);if(r2){const L=Math.min(r.left,r2.left),T=Math.min(r.top,r2.top),R=Math.max(r.right,r2.right),B=Math.max(r.bottom,r2.bottom);r={left:L,top:T,right:R,bottom:B,width:R-L,height:B-T}}}
@@ -1349,9 +1352,10 @@ function sugestao(){const sy=window.calistoSync;let tipo='ideia';
     b.disabled=true;b.textContent='Enviando…';
     try{await sy.sugestao({tipo,texto,tela,versao:(document.querySelector('script[src^="sync."]')||{}).src||''});$('mBody').innerHTML=`<div class="vazio"><svg width="22" height="34" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Recebido, valeu!</b><span>O Gui lê tudo. Se precisar, ele te chama.</span></div>`}
     catch(x){b.disabled=false;b.textContent='Enviar';toast(navigator.onLine?'Não deu para enviar agora. Tenta de novo daqui a pouco.':'Sem internet: tenta de novo quando conectar.')}},null,'Fechar');setTimeout(()=>{const t=$('sgT');if(t)t.focus()},80)}
-function offerTour(){if(ui.tour2)return;const volta=!!ui.tour1;ui.tour1=ui.tour2=1;store.set('ui',ui);setTimeout(()=>{if(!$('modal').hidden||!$('editor').hidden)return;
+function offerTour(n){if(ui.tour2)return;n=n||0;setTimeout(()=>{if(ui.tour2)return;if(!$('modal').hidden||!$('editor').hidden||!$('abertura').hidden||!coach.hidden){if(n<40)offerTour(n+1);return} /* 21/11: espera o login e o "sobre você" terminarem */
+  const volta=!!ui.tour1;ui.tour1=ui.tour2=1;store.set('ui',ui);
   modal(volta?'Tour novo do calisto':'Primeira vez no calisto?','<p style="margin:0 0 12px;color:var(--muted)">Um tour de 1 minuto abre as telas e mostra onde fica cada coisa. Ele fica guardado no <b>?</b> do topo, para quando quiser.</p><button class="primary" data-t="go" style="width:100%;min-height:48px">Fazer o tour</button>',
-  e=>{if(e.target.closest('[data-t]')){closeModal();tour()}},null,'Agora não')},1500)}
+  e=>{if(e.target.closest('[data-t]')){closeModal();tour()}},null,'Agora não')},n?2500:1500)}
 /* ---------- desfazer: guarda uma foto do catálogo antes das ações que mudam coisas (até 10) ---------- */
 const undoSt=[];
 function snap(label,after){try{undoSt.push({label,after,j:JSON.stringify({songs,pls,prefs})});if(undoSt.length>8)undoSt.shift()}catch(e){}}
@@ -1487,12 +1491,24 @@ function recebido(d,op){
     try{op.postMessage({tipo:'calisto-ok',n:vindas.length},'*')}catch(e){}
     if(pl){curPl=pl.id;view='pl';drawList()}else{view='bib';drawList();if(vindas.length===1)open([ids[0]],0,'')}
     toast(`${novas} música${novas===1?' nova':'s novas'}${vindas.length-novas?` · ${vindas.length-novas} já tinha`:''}${pl?` · na playlist “${pl.name}”`:''}`,1)},null,'Cancelar')}
+/* 21/11: quem chega com a biblioteca vazia ganha uma música de exemplo (letra inventada), para o tour mostrar o palco. Dá para apagar. */
+(()=>{if(songs.length||ui.ex1||ui.ab1||location.hash==='#receber')return;ui.ex1=1;store.set('ui',ui);
+  songs.push({id:uid(),title:'Canção de Exemplo',artist:'Estúdio Júpiter',key:'G',capo:0,dur:0,text:'Primeira parte:\nG              D\n  Essa é uma canção de exemplo\nEm             C\n  pra você conhecer o Calisto\n>> Segure numa linha para criar um lembrete como este\n\nRefrão:\nC        D        G\n  Toque na letra para rolar\nC        D        G\n  dois toques mostram os botões\n:\n\nSegunda parte:\nG              D\n  Pode apagar quando quiser\nEm        C       D\n  arrastando a linha pro lado'});save();drawList()})(); // só no 1º uso deste aparelho
+/* 21/11: no celular, enquanto o Calisto não está na tela de início, um aviso ensina a instalar (no iPhone não existe botão automático) */
+{const solo=navigator.standalone||matchMedia('(display-mode: standalone)').matches,dentroApp=/FBAN|FBAV|Instagram|Line\/|; wv\)/.test(navigator.userAgent);let pedido=null;
+  const aviso=(html,acao)=>{if(solo||inFrame||location.hash==='#receber')return;let d=$('instalar');if(!d){d=document.createElement('div');d.id='instalar';document.body.append(d)}
+    d.innerHTML=`<div>${html}</div>${acao?'<button class="primary" id="instOk">Instalar</button>':''}<button class="mini" id="instX" aria-label="Fechar">✕</button>`;d.hidden=false;
+    $('instX').onclick=()=>{d.hidden=true};if(acao)$('instOk').onclick=acao};
+  if(dentroApp)aviso('<b>Abra no navegador</b> para instalar: toque em ⋯ e depois em <b>Abrir no Safari</b> (ou no Chrome).');
+  else if(isIOS)aviso('<b>Instale o Calisto:</b> toque em <b>Compartilhar</b> <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M10 2v11M6 6l4-4 4 4"/><path d="M5 9H4v9h12V9h-1"/></svg> e depois em <b>Adicionar à Tela de Início</b>. Depois, abra sempre pelo ícone.');
+  addEventListener('beforeinstallprompt',e=>{e.preventDefault();pedido=e;aviso('<b>Instale o Calisto</b> para abrir como app e usar sem internet.',async()=>{pedido.prompt();try{await pedido.userChoice}catch(x){}$('instalar').hidden=true})});
+  addEventListener('appinstalled',()=>{const d=$('instalar');if(d)d.hidden=true})}
 const hashGo=()=>{if(location.hash==='#limpeza')setTimeout(limpeza,300);else if(location.hash==='#receber')setTimeout(receber,200)};addEventListener('hashchange',hashGo);hashGo();
 window.__calistoOk(window.calistoApp);
 })();
 </script>
 <script>if('serviceWorker' in navigator){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').then(r=>{r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller){const t=document.getElementById('toast');if(t){t.textContent='Calisto atualizado. Feche e abra para usar a versão nova.';t.hidden=false;setTimeout(()=>t.hidden=true,5000)}}})})}).catch(()=>{})})}</script>
-<script type="module" src="sync.a0cb11a2.js"></script>
-<script type="module" src="spotify.7c6f104a.js"></script>
+<script type="module" src="sync.54841502.js"></script>
+<script type="module" src="spotify.e70c24b6.js"></script>
 </body>
 </html>

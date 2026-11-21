@@ -263,7 +263,7 @@ async function create(p, opt = {}) {
   } catch (e) {
     console.warn('Calisto spotify', e);
     if (e.login) { connect(p.id); return; }
-    app.toast(e.status === 403 ? 'O Spotify recusou (403). Confira se sua conta está liberada no app do Spotify.' : 'Não deu para falar com o Spotify agora. Tenta de novo.');
+    if (e.status === 403) semLiberacao(); else app.toast('Não deu para falar com o Spotify agora. Tenta de novo.');
   } finally { rodando = false; }
 }
 
@@ -285,6 +285,20 @@ async function apagarCalisto(lista) {
   const ids = new Set(lista.map(x => x.id));
   for (const p of app.state().pls) if (p.spotify && ids.has(p.spotify.id)) delete p.spotify;
   app.save(); app.redraw(); return { n, falhou };
+}
+// 21/11: enquanto o app do Spotify está em teste, só contas liberadas pelo Gui funcionam. A pessoa manda o e-mail daqui mesmo, sem precisar pedir.
+function semLiberacao() {
+  const sy = window.calistoSync;
+  app.modal('Spotify ainda não liberado', `<p style="color:var(--muted);margin:0 0 10px">Enquanto o Calisto está em teste, o Spotify só deixa entrar as contas que o Gui liberou. Mande o e-mail da sua conta do Spotify: ele libera e te avisa.</p>
+    <input class="f" id="spMail" type="email" autocomplete="email" placeholder="E-mail do seu Spotify" style="width:100%;font-size:16px;margin-bottom:10px">
+    <button class="primary" data-a="ok" style="width:100%;min-height:46px">Mandar para o Gui</button>`, async ev => {
+    const b = ev.target.closest('[data-a="ok"]'); if (!b) return;
+    const m = (document.getElementById('spMail').value || '').trim(); if (!/^\S+@\S+\.\S+$/.test(m)) { app.toast('Confira o e-mail'); return; }
+    if (!sy || !sy.logado()) { app.close(); app.toast('Entre na sua conta do Calisto primeiro (☁︎).'); return; }
+    b.disabled = true; b.textContent = 'Enviando…';
+    try { await sy.sugestao({ tipo: 'spotify', texto: 'Liberar Spotify: ' + m, tela: 'spotify' }); if (sy.spotifyEmail) sy.spotifyEmail(m); app.close(); app.toast('Pronto! O Gui vai liberar o seu Spotify.'); }
+    catch (x) { b.disabled = false; b.textContent = 'Mandar para o Gui'; app.toast('Não deu para enviar agora. Tenta de novo.'); }
+  }, null, 'Fechar');
 }
 async function vincular(s) { /* usado de fora */ if (!(await pronto(null))) return; escolher(null, s); }
 window.calistoSpotify = { create, conferir, vincular, listarCalisto, apagarCalisto, pronto, connected: () => !!tok, connect: () => connect(null), disconnect: () => { keep(tok = null); app.redraw(); } };

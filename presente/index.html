@@ -33,13 +33,13 @@ li b{display:block;margin-bottom:2px}li span{color:var(--muted);font-size:.95rem
 <h1 id="tt">Isso é seu.</h1>
 <p>Um presente do <b>Gui Monteiro</b>: o app que ele usa no palco, agora no seu bolso. Cifras e playlists com o seu tom, rolagem automática, metrônomo, afinador e um cantinho para compor. No show, funciona sem internet.</p>
 <ol>
- <li><em>1</em><div><b>Coloque na tela de início</b><span id="inst">Assim ele abre como app e funciona sem internet.</span></div></li>
- <li><em>2</em><div><b>Entre com o seu e-mail</b><span>Suas músicas ficam salvas na sua conta e iguais no celular, no iPad e no computador.</span></div></li>
- <li><em>3</em><div><b>Traga suas cifras</b><span>No celular: <b>+ Música › Colar uma cifra</b>. No computador, o <b>Botão Calisto</b> traz músicas e listas inteiras do Cifra Club de uma vez.</span></div></li>
- <li id="atl" hidden><em>4</em><div><b>Atalho do iPhone: cifra em 2 toques</b><span>Instale o atalho <b>Mandar pro Calisto</b>. No Cifra Club (no Safari), toque em <b>Compartilhar</b> › <b>Mandar pro Calisto</b>; depois abra o Calisto e toque em <b>+ Música › Colar do atalho</b>. Funciona com listas inteiras.</span><a class="go2" href="../atalho/Mandar%20pro%20Calisto.shortcut" style="margin-top:10px">Instalar o atalho</a></div></li>
+ <li><em>1</em><div><b>Abra o Calisto e coloque na tela de início</b><span id="inst">Assim ele abre como app, funciona sem internet e se atualiza sozinho.</span><a class="go" id="abrir" href="../" style="margin-top:12px">Abrir o Calisto</a></div></li>
+ <li><em>2</em><div><b>Crie a sua conta</b><span>No app, toque em <b>Entrar</b> e depois em <b>Criar conta</b> (e-mail e uma senha). Tudo fica salvo nela: se trocar de celular, nada se perde.</span></div></li>
+ <li><em>3</em><div><b>Traga suas cifras</b><span>Toque em <b>+ Música</b>: dá para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong. Logo na entrada tem um tour de 1 minuto e uma música de exemplo para testar.</span></div></li>
+ <li id="atl" hidden><em>4</em><div><b>Atalho do iPhone: cifra em 2 toques</b><span>Instale o atalho <b>Mandar pro Calisto</b>. No Cifra Club (no Safari), toque em <b>Compartilhar</b> › <b>Mandar pro Calisto</b>; depois, no Calisto, <b>+ Música › Colar do atalho</b>. Funciona com listas inteiras do Cifra Club.</span><a class="go2" href="../atalho/Mandar%20pro%20Calisto.shortcut" style="margin-top:10px">Instalar o atalho</a></div></li>
+ <li><em id="nPc">4</em><div><b>O computador é seu aliado</b><span>Abra <b>estudiojupiter.github.io/calisto</b> no computador e entre na mesma conta. O que você muda num aparelho aparece no outro em segundos. Lá, o <b>Botão Calisto</b> traz músicas e listas inteiras do Cifra Club de uma vez.</span><a class="go2" id="botao" href="../botao.html" style="margin-top:10px">Botão Calisto</a></div></li>
+ <li><em id="nSp">5</em><div><b>Spotify</b><span>Para criar playlists no Spotify a partir do Calisto: no app, toque em <b>☁︎ › Sobre você</b> e coloque o e-mail da sua conta do Spotify. Enquanto o app está em teste, o Gui libera o acesso.</span></div></li>
 </ol>
-<a class="go" id="abrir" href="../">Abrir o Calisto</a>
-<a class="go2" id="botao" href="../botao.html">Botão Calisto (computador)</a>
 <div class="note"><p>É um teste: pode ter coisa quebrada. Achou algo, ou teve uma ideia? No app, toque em <b>?</b> e depois em <b>Mandar sugestão</b>.</p>
 <p>Seus dados ficam na sua conta. Não são vendidos nem compartilhados.</p>
 <span class="sig"><svg viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>Estúdio Júpiter</span></div>
@@ -50,11 +50,12 @@ if(nome)document.getElementById('tt').textContent=nome+', isso é seu.';
 const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/.test(ua);
 const SH='<svg class="share" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v11M6 6l4-4 4 4"/><path d="M5 9H4v9h12V9h-1"/></svg>';
 const inst=document.getElementById('inst');
-if(ios)inst.innerHTML='No Safari, toque em <b>Compartilhar</b> '+SH+' e depois em <b>Adicionar à Tela de Início</b>. Daí em diante, abra sempre pelo ícone.';
-else if(and)inst.innerHTML='No Chrome, toque em <b>⋮</b> e depois em <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).';
+if(ios)inst.innerHTML='Toque no botão abaixo. Quando o Calisto abrir, toque em <b>Compartilhar</b> '+SH+' e depois em <b>Adicionar à Tela de Início</b>. Daí em diante, abra sempre pelo ícone: assim ele funciona sem internet e se atualiza sozinho.';
+else if(and)inst.innerHTML='Toque no botão abaixo. Quando o Calisto abrir, toque em <b>Instalar</b> no aviso de baixo (ou no Chrome: <b>⋮</b> › <b>Instalar app</b>). Daí em diante, abra sempre pelo ícone.';
 else{inst.innerHTML='No celular, abra este mesmo link e coloque na tela de início. No computador, dá para usar direto no navegador (no Chrome, o ícone de instalar fica na barra de endereço).'}
 if(ios||and)document.getElementById('botao').hidden=true;
-if(ios)document.getElementById('atl').hidden=false;
+if(ios){document.getElementById('atl').hidden=false;document.getElementById('nPc').textContent='5';document.getElementById('nSp').textContent='6'}
+if(/FBAN|FBAV|Instagram|Line\//.test(ua))inst.innerHTML='<b>Abra este link no navegador</b> (toque em ⋯ › Abrir no Safari ou no Chrome): por aqui não dá para instalar.';
 // logo "órbita na palavra"
 function logo(svg){const NS='http://www.w3.org/2000/svg',CR='#f6e7cb';svg.setAttribute('viewBox','0 0 420 170');const t=document.createElementNS(NS,'text');t.textContent='Calisto';t.setAttribute('x',210);t.setAttribute('y',104);t.setAttribute('text-anchor','middle');t.setAttribute('font-family','Panchang, sans-serif');t.setAttribute('font-weight',500);t.setAttribute('font-size',64);t.setAttribute('fill',CR);svg.appendChild(t);
  const b=t.getBBox();if(!b.width)return;const cx=b.x+b.width/2,cy=b.y+b.height*.6,rx=b.width*.58,ry=b.height*.42,deg=-7,r=deg*Math.PI/180,l=[cx-rx*Math.cos(r),cy-rx*Math.sin(r)],p=[cx+rx*Math.cos(r),cy+rx*Math.sin(r)];
