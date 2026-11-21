@@ -281,6 +281,7 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 #helpBtn{min-width:34px;padding:4px;color:var(--muted)}
 .toast .tundo{margin-left:12px;background:none;border:0;color:var(--bg);font-weight:800;text-decoration:underline;padding:2px 4px;min-height:0;font-size:inherit}
 #tuner{position:fixed;inset:0;z-index:26;background:var(--bg);display:flex;flex-direction:column}
+#tuner .tnbody.inR{animation:tnInR .22s ease-out}#tuner .tnbody.inL{animation:tnInL .22s ease-out}@keyframes tnInR{from{opacity:0;transform:translateX(36px)}}@keyframes tnInL{from{opacity:0;transform:translateX(-36px)}}
 #tuner .tnhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;border-bottom:1px solid var(--line)}
 #tuner .tnbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
 #tnNote{font-size:min(34vw,9rem);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink);transition:color .15s}
@@ -857,6 +858,8 @@ $('newPl').addEventListener('click',()=>askName('Nova playlist','',name=>{const 
 let plSnap='',plSnapId=null;
 function leavePl(){const p=plOf(plSnapId);if(p&&!p.arch&&JSON.stringify(p)!==plSnap){const i=pls.indexOf(p);if(i>0){pls.splice(i,1);pls.unshift(p);save()}}plSnapId=null} /* playlist mexida volta para o topo da lista */
 $('plBack').addEventListener('click',()=>{leavePl();view='pls';drawList()});
+/* na playlist aberta, arrastar o dedo para a direita volta às playlists (no palco não) */
+swipeH($('lib'),e=>view==='pl'&&$('stage').hidden&&$('tuner').hidden&&!e.target.closest('.hd,li.sw,input,textarea'),d=>{if(d<0&&view==='pl'&&!sw)$('plBack').click()});
 $('plRen').addEventListener('click',()=>{const p=plOf(curPl);if(p)askName('Renomear playlist',p.name,name=>{p.name=name;save();drawList()})});
 $('plPlay').addEventListener('click',()=>playPl(curPl,0));
 $('plAdd').addEventListener('click',()=>pickSongs());
@@ -1225,9 +1228,17 @@ function toolPanel(p){ui.tp=p;store.set('ui',ui);['tn','mt','dp'].forEach(k=>$('
   $('tuner').querySelectorAll('.seg [data-tp]').forEach(b=>b.classList.toggle('on',b.dataset.tp===p));
   if(p!=='dp')dpStop(); /* saiu do diapasão: para de tocar */
   if(p==='tn')micStart();else micStop()}
-function tunerOpen(p){stopScroll();$('tuner').hidden=false;$('mtPill').hidden=true;toolPanel(typeof p==='string'?p:(ui.tp||'tn'))}
+function tunerOpen(p){stopScroll();$('tuner').hidden=false;$('mtPill').hidden=true;toolPanel(typeof p==='string'?p:'tn')} /* abre sempre no afinador */
 function tunerClose(){$('tuner').hidden=true;micStop();dpStop();if(!mtOn)mtPaused=false;pillUi()}
 $('tuner').querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(b)toolPanel(b.dataset.tp)});
+/* arrastar o dedo para os lados troca de ferramenta: afinador ⇄ metrônomo ⇄ diapasão */
+function swipeH(el,ok,fn){let s=null;
+  el.addEventListener('touchstart',e=>{s=null;if(e.touches.length!==1||!ok(e))return;const t=e.touches[0];s={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
+  el.addEventListener('touchcancel',()=>{s=null},{passive:true});
+  el.addEventListener('touchend',e=>{if(!s)return;const t=e.changedTouches[0],dx=t.clientX-s.x,dy=t.clientY-s.y,ms=Date.now()-s.t;s=null;
+    if(ms<900&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.8)fn(dx<0?1:-1)},{passive:true})}
+swipeH($('tuner'),e=>!e.target.closest('input,textarea,.mtbig'),d=>{const L=['tn','mt','dp'],i=L.indexOf(ui.tp)+d;if(i<0||i>=L.length)return;
+  toolPanel(L[i]);const b=$('p'+L[i][0].toUpperCase()+L[i].slice(1));b.classList.remove('inL','inR');void b.offsetWidth;b.classList.add(d>0?'inR':'inL')});
 // metrônomo: agenda as batidas no relógio do áudio (não atrasa mesmo com a tela ocupada)
 const MT=Object.assign({bpm:100,beats:4,unit:4,acc:[0],vol:80},ui.mt||{});
 let mtOn=false,mtNext=0,mtBeat=0,mtTimer=0,mtQ=[],mtG=null,mtRaf=0,mtTaps=[];
