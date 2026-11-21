@@ -67,6 +67,7 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .mini{min-height:34px;padding:4px 10px;font-size:.85rem}
 .empty{color:var(--muted);padding:28px 4px;line-height:1.5}
 .list li.empty{display:block}
+.list li.letra{display:block;position:sticky;top:0;z-index:2;padding:4px 2px 3px;border-bottom:1px solid var(--line);background:var(--bg);color:var(--accent);font-size:.8rem;font-weight:800;letter-spacing:.12em;touch-action:auto} /* 21/11: marca de letra da ordem alfabética */
 /* alça para arrastar a música na playlist */
 .hd{touch-action:none;cursor:grab;color:var(--muted);font-size:1.3rem;line-height:1;padding:8px 6px;user-select:none;-webkit-user-select:none;border:0;background:none;min-height:40px}
 .list li.dragging{background:var(--panel);outline:2px solid var(--accent);border-radius:10px;position:relative;z-index:2}
@@ -221,7 +222,10 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .seg{display:flex;background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:2px;gap:2px}
 .seg button{border:0;background:none;min-height:44px;padding:6px 16px;font-size:.98rem;font-weight:600;color:var(--muted);border-radius:9px}
 .seg button.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
-#tuner .tnhead .sp{min-width:44px}#tnClose{min-width:44px}
+#tuner .tnhead .sp{min-width:44px}
+.tnlua{flex:none;display:flex;justify-content:center;padding-top:22px} /* 21/11: a lua no mesmo lugar nas três abas */
+.tnlua img{width:72px;height:72px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.55))}
+@media (max-height:640px){.tnlua img{width:48px;height:48px}.tnlua{padding-top:10px}}#tnClose{min-width:44px}
 @media (max-width:420px){.seg button{padding:6px 10px;font-size:.9rem}}
 #pMt,#pDp{justify-content:flex-start;gap:18px;width:min(560px,100%);margin:0 auto;overflow-y:auto}
 .mtbpm{display:flex;align-items:center;justify-content:center;gap:clamp(12px,5vw,36px);width:100%;margin-top:8px}
@@ -264,6 +268,9 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 .carrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;color:var(--accent);overflow:visible;transition:opacity .2s}
 .ccard{position:fixed;width:min(340px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px 14px 12px;box-shadow:0 12px 40px rgba(0,0,0,.6);transition:opacity .2s,left .28s ease,top .28s ease}
 #cTtl{display:block;font-size:1.05rem;margin-bottom:4px}.ccard p{margin:0 0 12px;color:var(--ink);line-height:1.5;font-size:.93rem}
+.ccard.comLua{padding-top:58px}
+.ccard.comLua::before{content:'';position:absolute;left:50%;top:-46px;width:96px;height:96px;transform:translateX(-50%);background:url(img/lua-240.png) center/contain no-repeat;filter:drop-shadow(0 8px 20px rgba(0,0,0,.6))} /* 21/11: a lua em cima do bem-vindo */
+#cTtl .cLogo{height:1.25em;width:auto;vertical-align:-.3em;margin-left:.25em;overflow:visible}
 .cdots{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}.cdots i{width:6px;height:6px;border-radius:50%;background:var(--line)}.cdots i.on{background:var(--accent)}
 .cnav{display:flex;gap:6px;align-items:center}.cnav .primary{min-height:38px}
 @media (prefers-reduced-motion:reduce){.chole,.ccard{transition:none}.chole::after{animation:none}}
@@ -323,8 +330,9 @@ html{-webkit-tap-highlight-color:transparent}
 .vazio{display:grid;justify-items:center;gap:8px;text-align:center;color:var(--muted);padding:34px 18px}
 .vazio svg{color:var(--ink);opacity:.75}
 .vazio b{color:var(--ink)}
-.chart .fimw{position:relative;padding-right:1.4em}
-.chart .fimc{position:absolute;right:0;bottom:.25em;width:.55em;height:.85em;color:var(--ink);opacity:.5;pointer-events:none}
+.vazio .luav{width:96px;height:96px;margin-bottom:4px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))}
+.chart .fimln{display:flex;justify-content:flex-end;padding-top:.35em;pointer-events:none} /* 21/11: a colcheia fecha a música uma linha abaixo do último verso, como assinatura */
+.chart .fimc{width:.6em;height:.9em;color:var(--ink);opacity:.5}
 #carregando{position:fixed;inset:0;z-index:50;background:var(--bg);display:grid;place-items:center;align-content:center;gap:14px;opacity:0;animation:cIn .2s .35s forwards}
 #carregando svg{width:170px;height:170px;overflow:visible}
 #carregando p{color:var(--muted);font-size:.85rem;margin:0}
@@ -340,6 +348,8 @@ html{-webkit-tap-highlight-color:transparent}
 #abertura .bot{position:absolute;left:max(22px,env(safe-area-inset-left,0px));right:max(22px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));display:grid;gap:10px;max-width:420px;margin:0 auto}
 #abertura.splash .go,#abertura.splash .go2{visibility:hidden}
 #abertura.sai{opacity:0;transition:opacity .35s}
+#abertura.splash{animation:abIn .6s ease-out both} /* 21/11: entra em fade */
+@keyframes abIn{from{opacity:0}to{opacity:1}}
 #abertura .go{background:var(--ink);color:#120a06;border:0;border-radius:999px;padding:14px 0;font-weight:700;font-size:1rem}
 #abertura .go2{background:transparent;color:var(--ink);border:1px solid rgba(246,231,203,.45);border-radius:999px;padding:13px 0;font-weight:600}
 .sig{display:flex;justify-content:center;align-items:center;gap:7px;font-size:.75rem;opacity:.9}
@@ -442,6 +452,7 @@ html{-webkit-tap-highlight-color:transparent}
 <div class="modal" id="modal" hidden><div class="mbox" role="dialog" aria-modal="true" aria-labelledby="mTtl"><div class="mhead"><b id="mTtl"></b><button id="mClose">Pronto</button></div><div id="mBody"></div></div></div>
 <section id="tuner" class="idle" hidden>
  <div class="tnhead wrapx"><button id="tnClose" aria-label="Voltar">←</button><div class="seg" role="tablist"><button data-tp="tn">Afinador</button><button data-tp="mt">Metrônomo</button><button data-tp="dp">Diapasão</button></div><span class="sp"></span></div>
+ <div class="tnlua"><img src="img/lua-240.png" alt=""></div>
  <div class="tnbody" id="pTn"><div id="tnNote">–</div><div class="tnmeter"><div class="z"></div><div class="c"></div><div id="tnNeedle"></div></div><div class="tnlab"><span>♭ −50</span><span>0</span><span>+50 ♯</span></div><div id="tnCents">Toque uma corda</div><div class="tnstr" id="tnStr"></div><div class="row" style="align-items:center;gap:10px"><button class="mini" id="tnAdn" aria-label="Lá mais grave">−</button><span id="tnA" style="color:var(--muted);font-variant-numeric:tabular-nums"></span><button class="mini" id="tnAup" aria-label="Lá mais agudo">+</button></div></div>
  <div class="tnbody wrapx" id="pMt" hidden>
   <div class="mtbpm"><button class="mtbig" id="mtDn" aria-label="Diminuir o BPM">−</button><div class="mtnum"><b id="mtBpm">100</b><small>BPM</small></div><button class="mtbig" id="mtUp" aria-label="Aumentar o BPM">+</button></div>
@@ -723,8 +734,9 @@ function drawList(){
     const q=norm($('q').value.trim());
     const r=LIB.filter(s=>!q||norm(s.title+' '+s.artist).includes(q));const inPl={};pls.forEach(p=>p.items.forEach(id=>inPl[id]=(inPl[id]||0)+1));
     $('bibN').hidden=!LIB.length;$('bibN').textContent=q?`${r.length} de ${LIB.length}`:`${LIB.length} músicas`;
+    let ltr='';const letra=s=>{if(q)return '';const c=norm(s.title).replace(/^[^a-z0-9]+/,'').charAt(0).toUpperCase();const L=!c?'':/[0-9]/.test(c)?'#':c;if(L===ltr)return '';ltr=L;return L?`<li class="letra" aria-hidden="true">${L}</li>`:''};
     $('list').innerHTML=r.length?r.map(s=>{const n=inPl[s.id]||0;
-      return `<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
+      return letra(s)+`<li class="${isPlayed(s.id)?'done':''}"><div class="open" data-open="${s.id}"><div class="t">${h(s.title)}${tag(s.id)}</div><div class="a">${h(s.artist)}</div></div><span class="key">${h(kt(s,''))}</span><button class="mini${n?' on':''}" data-addto="${s.id}" aria-label="Playlists desta música">${n?'✓ '+n:'+ lista'}</button><button class="swdel" data-del="song:${s.id}">Apagar</button></li>`}).join('')
       :`<li class="empty"><div class="vazio">${songs.length?`<svg width="18" height="28" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Nada com essa busca</b><span>Tente o nome do artista ou só uma palavra do título.</span>`:`<svg width="22" height="34" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Sua biblioteca começa aqui</b><span>Toque em <b>+ Música</b> para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong.</span>`}</div></li>`;
   }else if(view==='comp'){
     const r=songs.filter(s=>s.comp&&(!qq||norm(s.title+' '+(s.text||'')).includes(qq))).sort((a,b)=>(b.mt||0)-(a.mt||0));
@@ -736,7 +748,7 @@ function drawList(){
     const sp=window.calistoSpotify;const withL=pls.filter(p=>p.spotify&&p.spotify.url&&plMatch(p));
     $('spNote').innerHTML=!sp?'O Spotify funciona na versão instalada do Calisto.':(sp.connected()?'Conectado ao Spotify. Para criar ou atualizar: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. <button class="mini" id="spOut">Desconectar</button>':'Para criar playlists no Spotify: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. Na primeira vez ele pede para entrar na sua conta do Spotify.');
     $('list').innerHTML=withL.length?withL.map(p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${p.spotify.n||0} de ${p.items.length} no Spotify${p.spotify.miss&&p.spotify.miss.length?` · faltou ${p.spotify.miss.length}`:''}</div></div><a class="mini sp" href="${h(p.spotify.url)}" target="_blank" rel="noopener">Abrir</a><button class="mini" data-spshare="${p.id}">Link</button></li>`).join('')
-      :'<li class="empty">Nenhuma playlist no Spotify ainda.</li>';
+      :'<li class="empty"><div class="vazio"><img src="img/lua-240.png" alt="A lua Calisto" class="luav"><b>Nenhuma playlist no Spotify ainda</b><span>Abra uma playlist, toque em <b>⋯ Mais</b> e depois em <b>Criar no Spotify</b>.</span></div></li>';
   }else if(view==='pls'){
     {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button><button class="swdel" data-del="pl:${p.id}">Apagar</button></li>`;const act=pls.filter(p=>!p.arch&&plMatch(p)),arc=pls.filter(p=>p.arch&&plMatch(p));$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
       :'<li class="empty">Nenhuma playlist ainda. Toque em <b>+ Nova playlist</b>, dê um nome (por exemplo, "Casamento 20/11") e escolha as músicas no catálogo.</li>';}
@@ -906,7 +918,7 @@ function show(){
   const cp=cur.capo||0,sh=tr-cp; /* capotraste: o tom é o que soa; a cifra mostra as formas (tom − capo) */
   const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
   const capoTxt=cp?`Capo ${cp}${cur.key?` · formas de ${trKey(cur.key,sh)}`:''}`:'';
-  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div>${capoTxt?`<div class="capo">${h(capoTxt)}</div>`:''}</div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;{const L=$('chart').querySelectorAll('.ln,.ly,.cl');const z=L[L.length-1];if(z){z.classList.add('fimw');z.insertAdjacentHTML('beforeend','<svg class="fimc" width="9" height="14" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>')}}
+  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div>${capoTxt?`<div class="capo">${h(capoTxt)}</div>`:''}</div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;{if($('chart').children.length){$('chart').insertAdjacentHTML('beforeend','<div class="fimln"><svg class="fimc" width="9" height="14" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg></div>')}}
   toggleChrome(false);padTop();
   $('sheet').scrollTop=0;$('prev').disabled=qi===0;$('next').disabled=qi>=queue.length-1;
   const nmOf=i=>{const s=songs.find(x=>x.id===queue[i]);return s?s.title:''};
@@ -1258,10 +1270,10 @@ const toLib=v=>{if(!$('editor').hidden)closeEditor();if(!$('stage').hidden)$('ba
 const toStage=()=>{const s=firstSong();if(!s)return false;if($('stage').hidden){ui.tip1=1;open([s.id],0,'')}return true};
 const mob=()=>innerWidth<=560;
 const STEPS=[
- {t:'Bem-vindo ao calisto',x:'Tudo que gira em torno da sua música. Vou abrir as telas de verdade e apontar onde fica cada coisa. Use <b>Próximo</b> e <b>Voltar</b>; dá para sair quando quiser.',go:()=>toLib('bib'),brand:1},
+ {t:'Bem-vindo ao ',x:'Tudo que gira em torno da sua música. Vou abrir as telas de verdade e apontar onde fica cada coisa. Use <b>Próximo</b> e <b>Voltar</b>; dá para sair quando quiser.',go:()=>toLib('bib'),brand:1},
  {el:'#tBib',t:'Biblioteca',x:'Todas as suas músicas. As abas de baixo levam às outras partes: Playlists, Spotify, Composição e Afinador.',go:()=>toLib('bib')},
  {el:'.qrow',t:'Busca e total',x:'Procure por nome da música ou do artista. Ao lado aparece quantas músicas você tem.',go:()=>toLib('bib')},
- {el:'#list li:not(.empty)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar; se errar, toque em <b>Desfazer</b> no aviso de baixo.',go:()=>toLib('bib')},
+ {el:'#list li:not(.empty):not(.letra)',t:'Uma música',x:'Toque para abrir no palco. <b>+ lista</b> coloca em playlists. Arraste a linha para a esquerda para apagar; se errar, toque em <b>Desfazer</b> no aviso de baixo.',go:()=>toLib('bib')},
  {el:'#fileBtn',t:'Adicionar músicas',x:'Cole uma cifra copiada de qualquer site (Cifra Club, Cifras, Ultimate Guitar), escreva do zero ou importe arquivos do OnSong.',go:()=>toLib('bib')},
  {el:'#newPl',t:'Playlists',x:'Um set para cada show. A playlist que você mexe sobe para o topo; as antigas dá para arquivar.',go:()=>toLib('pls')},
  {el:'#list li:not(.empty)',t:'Dentro de uma playlist',x:'Toque numa música para começar o show dali. Lá dentro: <b>+ Músicas</b>, <b>🎤 Artista</b> (cada cantora com os tons dela) e <b>⋯ Mais</b> (PDF, arquivar, Spotify).',go:()=>toLib('pls')},
@@ -1294,7 +1306,7 @@ let cTok=0;
 async function cShow(i){const tok=++cTok;cI=Math.max(0,Math.min(cList.length-1,i));const st=cList[cI];coach.classList.add('busy');
   try{if(st.go)await st.go()}catch(e){}await wait(260);if(tok!==cTok)return;
   const e1=typeof st.el==='function'?st.el():st.el;const el=e1&&document.querySelector(e1);if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});await wait(60);if(tok!==cTok)return;
-  $('cTtl').textContent=st.t;$('cTtl').classList.toggle('brand',!!st.brand);$('cTxt').innerHTML=st.x+(st.brand?'<span class="csig"><svg width="8" height="12" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>Estúdio Júpiter</span>':'');$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
+  if(st.brand){$('cTtl').innerHTML=h(st.t)+'<svg class="lg cLogo" aria-label="Calisto"></svg>';logo($('cTtl').querySelector('svg'))}else $('cTtl').textContent=st.t;$('cTtl').classList.toggle('brand',!!st.brand);$('cCard').classList.toggle('comLua',!!st.brand);$('cTxt').innerHTML=st.x+(st.brand?'<span class="csig"><svg width="8" height="12" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>Estúdio Júpiter</span>':'');$('cDots').innerHTML=cList.map((_,k)=>`<i class="${k===cI?'on':''}"></i>`).join('');
   $('cPrev').hidden=!cI;$('cNext').textContent=cI===cList.length-1?'Começar a usar':'Próximo';coach.classList.remove('busy');cPlace();setTimeout(()=>{if(tok===cTok)cPlace()},320)}
 function tour(){stopScroll();cList=STEPS.filter(s=>!s.need||s.need());coach.hidden=false;cShow(0)}
 function tourEnd(){cTok++;coach.hidden=true;coach.classList.remove('busy');toLib('bib')}
@@ -1398,7 +1410,7 @@ const drawLogos=()=>document.querySelectorAll('svg.lg').forEach(x=>{if(x.getBoun
 /* abertura: só na primeira vez (biblioteca vazia); depois o app abre direto */
 function abertura(force){if(location.hash==='#receber'||location.hash==='#limpeza')return;
   if(!force&&(ui.ab1||songs.length)){ /* 21/11: toda vez que o app abre, a abertura aparece por 1,5 s e some sozinha */
-    const A=$('abertura');A.classList.add('splash');A.hidden=false;drawLogos();setTimeout(()=>{A.classList.add('sai');setTimeout(()=>{A.hidden=true;A.classList.remove('sai','splash');offerTour()},350)},Math.max(300,1500-(performance.now()|0)));return}
+    const A=$('abertura');A.classList.add('splash');A.hidden=false;drawLogos();setTimeout(()=>{A.classList.add('sai');setTimeout(()=>{A.hidden=true;A.classList.remove('sai','splash');offerTour()},350)},2000);return} /* 21/11: 2 s inteiros, com o fade de entrada */
   $('abertura').hidden=false;drawLogos();
   const fim=()=>{$('abertura').hidden=true;ui.ab1=1;store.set('ui',ui);offerTour()};
   $('abSem').onclick=fim;$('abEntrar').onclick=()=>{fim();const b=$('cloudBtn');if(b&&!b.hidden)setTimeout(()=>b.click(),350)}}
