@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" style="background:#000">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
@@ -96,6 +96,7 @@ body.dragging{user-select:none;-webkit-user-select:none}
 #sheet .head h2{margin:0;font-size:1.6em;line-height:1.15}
 #sheet .head .art{color:var(--muted);margin:.15em 0 .3em}
 #sheet .head .meta{color:var(--chord);font-size:.8em;font-weight:600;margin-bottom:.8em}
+#sheet .head .meta.fraco{color:var(--muted);font-size:.7em;font-weight:500;opacity:.85} /* 21/11: artista sem tom salvo: aviso curto e apagado */
 #sheet .head .capo{display:inline-block;color:#ffd9bf;background:rgba(196,98,45,.28);border:1px solid rgba(196,98,45,.65);border-radius:8px;padding:.15em .55em;font-size:.82em;font-weight:800;margin:0 0 .7em;letter-spacing:.01em} /* 21/11: capo em destaque (ferrugem) */
 .chart{line-height:1.3;margin:0}
 .chart .ln{display:flex;flex-wrap:wrap;align-items:flex-end;margin-top:.15em}
@@ -337,7 +338,7 @@ html{-webkit-tap-highlight-color:transparent}
 #carregando svg{width:170px;height:170px;overflow:visible}
 #carregando p{color:var(--muted);font-size:.85rem;margin:0}
 @keyframes cIn{to{opacity:1}}
-#abertura{position:fixed;inset:0;z-index:40;background:#07050a;overflow:hidden;color:var(--ink)}
+#abertura{position:fixed;inset:0;z-index:60;background:#000;overflow:hidden;color:var(--ink)} /* 21/11: fundo preto desde o 1º instante: nada pisca atrás */
 #abertura .jup{position:absolute;left:-15%;width:130%;max-width:none;bottom:-16%;filter:saturate(1.25) contrast(1.1)}
 @media (min-aspect-ratio:3/4){#abertura .jup{left:5%;width:90%;bottom:-40%}}
 #abertura .fade{position:absolute;inset:0;background:linear-gradient(#07050a 30%,rgba(7,5,10,.04) 60%,rgba(7,5,10,.5))}
@@ -347,9 +348,16 @@ html{-webkit-tap-highlight-color:transparent}
 #abertura .sl{font-size:.92rem;opacity:.9;text-align:center;padding:0 20px}
 #abertura .bot{position:absolute;left:max(22px,env(safe-area-inset-left,0px));right:max(22px,env(safe-area-inset-right,0px));bottom:calc(26px + env(safe-area-inset-bottom,0px));display:grid;gap:10px;max-width:420px;margin:0 auto}
 #abertura.splash .go,#abertura.splash .go2{visibility:hidden}
-#abertura.sai{opacity:0;transition:opacity .35s}
-#abertura.splash{animation:abIn .6s ease-out both} /* 21/11: entra em fade */
+#abertura.sai{opacity:0;transition:opacity .45s ease}
+/* 21/11: entrada imponente: Júpiter sobe devagar do escuro, a lua acende, depois o nome e a assinatura */
+#abertura .jup{animation:abJup 1.6s cubic-bezier(.2,.7,.2,1) both}
+#abertura .moon{animation:abLua 1.1s .35s cubic-bezier(.2,.7,.2,1) both}
+#abertura .name{animation:abIn .9s .75s ease-out both}
+#abertura .bot{animation:abIn .8s 1s ease-out both}
 @keyframes abIn{from{opacity:0}to{opacity:1}}
+@keyframes abJup{from{opacity:0;transform:translateY(8%)}to{opacity:1;transform:none}}
+@keyframes abLua{from{opacity:0;transform:translateX(-50%) scale(.9)}to{opacity:1;transform:translateX(-50%) scale(1)}}
+@media (prefers-reduced-motion:reduce){#abertura .jup,#abertura .moon,#abertura .name,#abertura .bot{animation:none}}
 #abertura .go{background:var(--ink);color:#120a06;border:0;border-radius:999px;padding:14px 0;font-weight:700;font-size:1rem}
 #abertura .go2{background:transparent;color:var(--ink);border:1px solid rgba(246,231,203,.45);border-radius:999px;padding:13px 0;font-weight:600}
 .sig{display:flex;justify-content:center;align-items:center;gap:7px;font-size:.75rem;opacity:.9}
@@ -364,7 +372,7 @@ html{-webkit-tap-highlight-color:transparent}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="icons/calisto-icone-2.png">
 <meta name="apple-mobile-web-app-title" content="Calisto">
 </head>
 <body>
@@ -373,8 +381,10 @@ html{-webkit-tap-highlight-color:transparent}
  <mask id="colM" maskUnits="userSpaceOnUse" x="-10" y="-10" width="20" height="20"><rect x="-10" y="-10" width="20" height="20" fill="#fff"/><g transform="rotate(-22)" fill="#000"><rect x="-7" y="-1.5" width="14" height=".38"/><rect x="-7" y=".4" width="14" height=".55"/><rect x="-7" y="2.1" width="14" height=".32"/></g></mask>
  <symbol id="col" viewBox="-6.6 -23.2 18.6 27.6"><ellipse rx="5.4" ry="3.9" transform="rotate(-22)" fill="currentColor" mask="url(#colM)"/><rect x="3.75" y="-22" width="1.6" height="21" fill="currentColor"/><path d="M5 -21.4 C 8.8 -20.6, 10.6 -18.4, 10.4 -15.2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/><circle cx="10.1" cy="-14.6" r="1.75" fill="currentColor"/></symbol>
 </defs></svg>
-<div id="carregando" aria-live="polite"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M8.67,63.85 A43 15 -16 0 1 91.33,40.15" fill="none" stroke="#f6e7cb" stroke-width="1" opacity=".35"/><image href="img/lua-96.png" x="30" y="30" width="40" height="40"/><path d="M91.33,40.15 A43 15 -16 0 1 8.67,63.85" fill="none" stroke="#f6e7cb" stroke-width="1.1" opacity=".9"/><g><svg x="-5.5" y="-14" width="11" height="16" style="color:#f6e7cb"><use href="#col" width="100%" height="100%"/></svg><animateMotion dur="3.2s" repeatCount="indefinite" path="M91.33,40.15 A43 15 -16 0 1 8.67,63.85 A43 15 -16 0 1 91.33,40.15"/></g></svg><p>Abrindo suas músicas…</p></div>
 
+
+<section id="abertura" class="splash" aria-label="Calisto"><img class="jup" src="img/jupiter.jpg" alt=""><div class="fade"></div><img class="moon" src="img/lua-240.png" alt="A lua Calisto"><div class="name"><svg class="lg"></svg><span class="sl">Tudo que gira em torno da sua música.</span></div><div class="bot"><button class="go" id="abEntrar">Entrar</button><button class="go2" id="abSem">Começar sem conta</button><div class="sig"><i></i>Estúdio Júpiter</div></div></section>
+<script>setTimeout(()=>{const A=document.getElementById('abertura');if(A&&!A.hidden&&A.classList.contains('splash'))A.hidden=true},9000) /* segurança: se algo travar na abertura, ela sai sozinha */</script>
 <section id="lib" class="wrapx">
   <div class="lhead">
     <h1 class="logo" aria-label="Calisto"><svg class="lg"></svg></h1>
@@ -427,7 +437,7 @@ html{-webkit-tap-highlight-color:transparent}
   <div class="grab" id="grab" aria-hidden="true"></div>
 </section>
 <div id="cd" hidden></div>
-<section id="abertura" hidden><img class="jup" src="img/jupiter.jpg" alt=""><div class="fade"></div><img class="moon" src="img/lua-240.png" alt="A lua Calisto"><div class="name"><svg class="lg"></svg><span class="sl">Tudo que gira em torno da sua música.</span></div><div class="bot"><button class="go" id="abEntrar">Entrar</button><button class="go2" id="abSem">Começar sem conta</button><div class="sig"><i></i>Estúdio Júpiter</div></div></section>
+
 
 <section id="editor" hidden>
   <div class="ehead wrapx"><button id="eCancel">Cancelar</button><b id="eTtl">Editar cifra</b><button id="eUndo" aria-label="Desfazer" title="Desfazer" disabled>↶</button><button class="primary" id="eSave">Salvar</button></div>
@@ -695,20 +705,26 @@ function cleanPaste(raw){let L=raw.replace(/\r\n?/g,'\n').replace(/ /g,' ').rep
   const body=out.slice(k).join('\n').replace(/\n{3,}/g,'\n\n');
   return {head:hd,text:`Title: ${hd[0]||'Nova música'}\n`+(hd[1]?`Artist: ${hd[1]}\n`:'')+meta+'\n'+body};}
 function newSongFrom(p){const s=Object.assign({id:uid(),fresh:true},p);songs.push(s);songs.sort((a,b)=>a.title.localeCompare(b.title,'pt'));save();drawList();ui.tip1=1;open([s.id],0,'');setTimeout(()=>$('edit').click(),60)}
-function addMenu(){modal('Adicionar música',`<button class="big" data-a="paste"><span>📋 Colar uma cifra<br><small style="color:var(--muted)">de qualquer site ou app: Cifra Club, Cifras, Ultimate Guitar…</small></span><span>›</span></button>
+/* 21/11: o atalho do iPhone ("Mandar pro Calisto", no Compartilhar do Safari) copia a cifra em JSON; aqui ela entra pelo mesmo caminho do Botão Calisto */
+function doAtalho(txt){let d=null;try{d=JSON.parse(String(txt||'').trim())}catch(e){}if(!d||d.calisto!=='importar'||!Array.isArray(d.songs))return false;closeModal();setTimeout(()=>recebido(d,null),250);return true}
+async function colarAtalho(){let t='';try{t=await navigator.clipboard.readText()}catch(e){}
+  if(/^CALISTO-ERRO/.test(t)){toast('O atalho não achou a cifra nessa página. Tente selecionar a cifra antes de compartilhar.');return}
+  if(!doAtalho(t))pasteBox()}
+function addMenu(){modal('Adicionar música',`${isIOS?`<button class="big" data-a="atalho"><span>📲 Colar do atalho<br><small style="color:var(--muted)">depois de usar “Mandar pro Calisto” no Safari</small></span><span>›</span></button>`:''}<button class="big" data-a="paste"><span>📋 Colar uma cifra<br><small style="color:var(--muted)">de qualquer site ou app: Cifra Club, Cifras, Ultimate Guitar…</small></span><span>›</span></button>
   <button class="big" data-a="new"><span>✎ Escrever do zero</span><span>›</span></button>
   <button class="big" data-a="file"><span>📁 Importar arquivos<br><small style="color:var(--muted)">OnSong, .txt, ChordPro ou o backup do Calisto</small></span><span>›</span></button>`,
   e=>{const a=e.target.closest('[data-a]');if(!a)return;const k=a.dataset.a;
-    if(k==='file'){closeModal();$('file').click()}
+    if(k==='atalho'){colarAtalho()}
+    else if(k==='file'){closeModal();$('file').click()}
     else if(k==='new'){closeModal();newSongFrom({title:'Nova música',artist:'',key:'',text:''})}
     else if(k==='paste')pasteBox()},null,'Fechar')}
 function pasteBox(){modal('Colar uma cifra',`<p class="spnote">No site ou app de cifras, copie a cifra inteira (com o nome e o artista, se der) e cole aqui. Eu separo o título, o artista, o tom e as partes; depois você confere no editor.</p>
   <textarea class="f" id="pasteX" rows="10" wrap="off" spellcheck="false" autocapitalize="off" placeholder="Cole aqui" style="font-family:var(--f-mono);font-size:14px;white-space:pre;min-height:40vh"></textarea>
   <p class="spnote" id="pasteInfo" style="margin-top:6px"></p><div class="row"><button class="primary" data-a="ok" style="flex:1;min-height:46px">Criar música</button></div>`,
-  e=>{if(!e.target.closest('[data-a="ok"]'))return;const raw=$('pasteX').value;if(!raw.trim()){toast('Cole uma cifra primeiro');return}
+  e=>{if(!e.target.closest('[data-a="ok"]'))return;const raw=$('pasteX').value;if(!raw.trim()){toast('Cole uma cifra primeiro');return}if(doAtalho(raw))return;
     const c=cleanPaste(raw),p=parse(c.text,'');if(!c.head[0])p.title='Nova música';closeModal();newSongFrom(p);toast('Confira o nome, o artista e o tom em "Dados da música" e salve.')},null,'Cancelar');
   const x=$('pasteX'),info=()=>{const c=cleanPaste(x.value);if(!x.value.trim()){$('pasteInfo').textContent='';return}const p=parse(c.text,'');$('pasteInfo').textContent=`${c.head[0]?`“${p.title}”${p.artist?' · '+p.artist:''}`:'Sem título (você dá o nome no editor)'}${p.key?' · tom '+p.key:''}`};
-  x.addEventListener('input',info);x.addEventListener('paste',()=>setTimeout(info,0));setTimeout(()=>x.focus(),50)}
+  x.addEventListener('input',info);x.addEventListener('paste',()=>setTimeout(()=>{if(!doAtalho(x.value))info()},0));setTimeout(()=>x.focus(),50)}
 $('fileBtn').addEventListener('click',addMenu);
 $('file').addEventListener('change',e=>{importFiles([...e.target.files]);e.target.value=''});
 
@@ -743,11 +759,11 @@ function drawList(){
     const dt=t=>t?new Date(t).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'';
     $('list').innerHTML=r.length?r.map(s=>{const n=(s.recs||[]).length,l1=(s.text||'').split('\n').find(x=>x.trim())||'';
       return `<li class="idea"><div class="open" data-comp="${s.id}"><div class="t">${h(s.title)}</div><div class="a">${[dt(s.mt),n?`🎙 ${n}`:'',h(l1)].filter(Boolean).join(' · ')}</div></div><span></span><button class="mini" data-fin="${s.id}">✓ Finalizar</button><button class="swdel" data-del="comp:${s.id}">Apagar</button></li>`}).join('')
-      :`<li class="empty"><div class="vazio">${qq?`<svg width="18" height="28" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Nada com essa busca</b>`:`<svg width="22" height="34" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>A primeira ideia começa aqui</b><span>Toque em <b>Gravar agora</b> para registrar uma melodia, ou em <b>+ Nova ideia</b> para começar pela letra.</span>`}</div></li>`;
+      :`<li class="empty"><div class="vazio">${qq?`<svg width="18" height="28" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>Nada com essa busca</b>`:`<svg width="29" height="44" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg><b>A primeira ideia começa aqui</b><span>Toque em <b>Gravar agora</b> para registrar uma melodia, ou em <b>+ Nova ideia</b> para começar pela letra.</span>`}</div></li>`;
   }else if(view==='spo'){
     const sp=window.calistoSpotify;const withL=pls.filter(p=>p.spotify&&p.spotify.url&&plMatch(p));
     $('spNote').innerHTML=!sp?'O Spotify funciona na versão instalada do Calisto.':(sp.connected()?'Conectado ao Spotify. Para criar ou atualizar: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. <button class="mini" id="spOut">Desconectar</button>':'Para criar playlists no Spotify: abra uma playlist → <b>⋯ Mais</b> → <b>Criar no Spotify</b>. Na primeira vez ele pede para entrar na sua conta do Spotify.');
-    $('list').innerHTML=withL.length?withL.map(p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${p.spotify.n||0} de ${p.items.length} no Spotify${p.spotify.miss&&p.spotify.miss.length?` · faltou ${p.spotify.miss.length}`:''}</div></div><a class="mini sp" href="${h(p.spotify.url)}" target="_blank" rel="noopener">Abrir</a><button class="mini" data-spshare="${p.id}">Link</button></li>`).join('')
+    $('list').innerHTML=withL.length?withL.map(p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${p.spotify.n||0} de ${p.items.length} no Spotify${p.spotify.miss&&p.spotify.miss.length?` · faltou ${p.spotify.miss.length}`:''}</div></div><a class="mini sp" href="${h(p.spotify.url)}" target="_blank" rel="noopener">Abrir</a><button class="mini" data-spshare="${p.id}">Link</button><button class="swdel" data-del="spl:${p.id}">Apagar do Spotify</button></li>`).join('')
       :'<li class="empty"><div class="vazio"><img src="img/lua-240.png" alt="A lua Calisto" class="luav"><b>Nenhuma playlist no Spotify ainda</b><span>Abra uma playlist, toque em <b>⋯ Mais</b> e depois em <b>Criar no Spotify</b>.</span></div></li>';
   }else if(view==='pls'){
     {const plRow=p=>`<li><div class="open" data-pl="${p.id}"><div class="t">${h(p.name)}</div><div class="a">${nMus(p.items.length)}${p.items.length?' · ≈ '+fmtTotal(totalDur(p.items).sum):''}${p.singer?' · 🎤 '+h(p.singer):''}</div></div><span></span><button class="mini" data-plplay="${p.id}" aria-label="Tocar ${h(p.name)}">▶</button><button class="swdel" data-del="pl:${p.id}">Apagar</button></li>`;const act=pls.filter(p=>!p.arch&&plMatch(p)),arc=pls.filter(p=>p.arch&&plMatch(p));$('list').innerHTML=pls.length?act.map(plRow).join('')+(arc.length?`<li><div class="open" data-arch="1"><div class="t" style="color:var(--muted)">📦 Arquivadas (${arc.length}) ${ui.showArch?'▾':'›'}</div></div></li>`+(ui.showArch?arc.map(plRow).join(''):''):'')
@@ -779,6 +795,8 @@ $('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]
     if(k==='song'){const s=songs.find(x=>x.id===v);snap('apagar música');delSong(v);toast(`"${s?s.title:'Música'}" apagada`,1)}
     else if(k==='pl'){const p=plOf(v);snap('apagar playlist');pls=pls.filter(x=>x.id!==v);save();drawList();toast(`Playlist "${p?p.name:''}" apagada (as músicas continuam)`,1);spApagarJunto(p)}
     else if(k==='comp'){const s=songs.find(x=>x.id===v);snap('apagar ideia');songs=songs.filter(x=>x.id!==v);save();drawList();toast(`Ideia "${s?s.title:''}" apagada`,1)}
+    else if(k==='spl'){const p=plOf(v),sp=window.calistoSpotify;if(!p||!p.spotify||!sp)return;const alvo={id:p.spotify.id,nome:p.name};dl.textContent='Apagando…'; /* 21/11: apaga a playlist no Spotify; no Calisto ela continua */
+      (async()=>{try{if(!(await sp.pronto(null))){drawList();return}const r=await sp.apagarCalisto([alvo]);toast(r.n?`“${p.name}” apagada do Spotify (no Calisto ela continua)`:'Não deu para apagar no Spotify agora')}catch(x){toast('Não deu para falar com o Spotify agora.')}drawList()})()}
     else if(k==='item'){const p=plOf(curPl);if(p){snap('tirar da playlist');p.items.splice(+v,1);save();drawList();toast('Tirada da playlist (continua na biblioteca)',1)}}
     return}
   if(Date.now()-swNoClick<400)return;
@@ -914,11 +932,11 @@ function show(){
   const mine=!!(prefs[cur.id]&&prefs[cur.id].tr!=null); // sem tom seu salvo, a música aparece no original
   $('kLab').innerHTML=`${h(k)}<small>${h(origView?'original':singer?first(singer):plMode&&ptr!=null?'playlist':mine?'meu tom':'original')}</small>`;$('spd').textContent=speedOf(cur.id);$('cLab').textContent='Capo '+(cur.capo||0);
   $('sheet').style.fontSize=ui.font+'px';
-  const quem=origView?(tr?`Original ${cur.key}, ajustado agora para ${k} (não fica salvo)`:`Tom original: ${k}`):singer?(hasSg(cur.id,singer)?`Tom de ${singer}: ${k}`:`${singer} ainda sem tom salvo (mostrando ${mine?'o seu':'o original'}: ${k})`):plMode&&ptr!=null?`Tom da playlist: ${k}`:mine?`Meu tom: ${k}`:`Tom original: ${k}`;
+  const quem=origView?(tr?`Original ${cur.key}, ajustado agora para ${k} (não fica salvo)`:`Tom original: ${k}`):singer?(hasSg(cur.id,singer)?`Tom de ${singer}: ${k}`:`${first(singer)} sem tom salvo · ${k}`):plMode&&ptr!=null?`Tom da playlist: ${k}`:mine?`Meu tom: ${k}`:`Tom original: ${k}`;
   const cp=cur.capo||0,sh=tr-cp; /* capotraste: o tom é o que soa; a cifra mostra as formas (tom − capo) */
   const meta=[cur.key?quem+(!origView&&trKey(cur.key,tr)!==cur.key?` · original ${cur.key}`:''):'',cur.dur?mmss(cur.dur):''].filter(Boolean).join(' · ');
   const capoTxt=cp?`Capo ${cp}${cur.key?` · formas de ${trKey(cur.key,sh)}`:''}`:'';
-  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta">${h(meta)}</div>${capoTxt?`<div class="capo">${h(capoTxt)}</div>`:''}</div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;{if($('chart').children.length){$('chart').insertAdjacentHTML('beforeend','<div class="fimln"><svg class="fimc" width="9" height="14" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg></div>')}}
+  $('sheet').innerHTML=`<div class="head"><h2>${h(cur.title)}</h2><div class="art">${h(cur.artist)}</div><div class="meta${singer&&!origView&&!hasSg(cur.id,singer)?' fraco':''}">${h(meta)}</div>${capoTxt?`<div class="capo">${h(capoTxt)}</div>`:''}</div><div class="chart" id="chart">${safeRender(cur,sh)}</div>`;{if($('chart').children.length){$('chart').insertAdjacentHTML('beforeend','<div class="fimln"><svg class="fimc" width="9" height="14" viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg></div>')}}
   toggleChrome(false);padTop();
   $('sheet').scrollTop=0;$('prev').disabled=qi===0;$('next').disabled=qi>=queue.length-1;
   const nmOf=i=>{const s=songs.find(x=>x.id===queue[i]);return s?s.title:''};
@@ -1408,14 +1426,13 @@ function logo(svg){const NS='http://www.w3.org/2000/svg',CR='#f6e7cb';svg.innerH
 const drawLogos=()=>document.querySelectorAll('svg.lg').forEach(x=>{if(x.getBoundingClientRect().width||!x.closest('[hidden]'))logo(x)});
 (document.fonts&&document.fonts.load?document.fonts.load('500 64px Panchang'):Promise.resolve()).then(drawLogos,drawLogos);
 /* abertura: só na primeira vez (biblioteca vazia); depois o app abre direto */
-function abertura(force){if(location.hash==='#receber'||location.hash==='#limpeza')return;
-  if(!force&&(ui.ab1||songs.length)){ /* 21/11: toda vez que o app abre, a abertura aparece por 1,5 s e some sozinha */
-    const A=$('abertura');A.classList.add('splash');A.hidden=false;drawLogos();setTimeout(()=>{A.classList.add('sai');setTimeout(()=>{A.hidden=true;A.classList.remove('sai','splash');offerTour()},350)},2000);return} /* 21/11: 2 s inteiros, com o fade de entrada */
-  $('abertura').hidden=false;drawLogos();
+function abertura(force){const A=$('abertura');if(location.hash==='#receber'||location.hash==='#limpeza'){A.hidden=true;return}
+  if(!force&&(ui.ab1||songs.length)){ /* 21/11: toda vez que o app abre: a abertura (que já está na tela desde o início) fica 2 s e some em fade */
+    drawLogos();setTimeout(()=>{A.classList.add('sai');setTimeout(()=>{A.hidden=true;A.classList.remove('sai','splash');offerTour()},460)},Math.max(500,2200-(performance.now()|0)));return}
+  A.classList.remove('splash');A.hidden=false;drawLogos();
   const fim=()=>{$('abertura').hidden=true;ui.ab1=1;store.set('ui',ui);offerTour()};
   $('abSem').onclick=fim;$('abEntrar').onclick=()=>{fim();const b=$('cloudBtn');if(b&&!b.hidden)setTimeout(()=>b.click(),350)}}
 abertura(location.hash==='#abertura');
-{const c=$('carregando');if(c)c.remove()}
 /* ---------- Botão Calisto (20/11): a janela abre em #receber e recebe as cifras da página onde o botão foi clicado ---------- */
 function receber(){try{history.replaceState(null,'',location.pathname)}catch(e){}
   const op=window.opener;

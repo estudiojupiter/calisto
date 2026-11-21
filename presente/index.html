@@ -1,6 +1,8 @@
 <!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Calisto · um presente</title><meta name="description" content="Tudo que gira em torno da sua música.">
-<meta name="theme-color" content="#120a07"><link rel="icon" href="../icons/icon-192.png"><link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<meta name="theme-color" content="#120a07">
+<meta property="og:title" content="Calisto · um presente"><meta property="og:description" content="Tudo que gira em torno da sua música. Um presente do Gui Monteiro.">
+<meta property="og:image" content="https://estudiojupiter.github.io/calisto/icons/icon-512.png"><meta property="og:type" content="website"><meta name="twitter:card" content="summary"><link rel="icon" href="../icons/icon-192.png"><link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=panchang@500&display=swap">
 <style>
 /* Página de boas-vindas do presente (kit dos testadores). ?para=Nome personaliza o título. */
@@ -34,6 +36,7 @@ li b{display:block;margin-bottom:2px}li span{color:var(--muted);font-size:.95rem
  <li><em>1</em><div><b>Coloque na tela de início</b><span id="inst">Assim ele abre como app e funciona sem internet.</span></div></li>
  <li><em>2</em><div><b>Entre com o seu e-mail</b><span>Suas músicas ficam salvas na sua conta e iguais no celular, no iPad e no computador.</span></div></li>
  <li><em>3</em><div><b>Traga suas cifras</b><span>No celular: <b>+ Música › Colar uma cifra</b>. No computador, o <b>Botão Calisto</b> traz músicas e listas inteiras do Cifra Club de uma vez.</span></div></li>
+ <li id="atl" hidden><em>4</em><div><b>Atalho do iPhone: cifra em 2 toques</b><span>Instale o atalho <b>Mandar pro Calisto</b>. No Cifra Club (no Safari), toque em <b>Compartilhar</b> › <b>Mandar pro Calisto</b>; depois abra o Calisto e toque em <b>+ Música › Colar do atalho</b>. Funciona com listas inteiras.</span><a class="go2" href="../atalho/Mandar%20pro%20Calisto.shortcut" style="margin-top:10px">Instalar o atalho</a></div></li>
 </ol>
 <a class="go" id="abrir" href="../">Abrir o Calisto</a>
 <a class="go2" id="botao" href="../botao.html">Botão Calisto (computador)</a>
@@ -51,6 +54,7 @@ if(ios)inst.innerHTML='No Safari, toque em <b>Compartilhar</b> '+SH+' e depois e
 else if(and)inst.innerHTML='No Chrome, toque em <b>⋮</b> e depois em <b>Instalar app</b> (ou <b>Adicionar à tela inicial</b>).';
 else{inst.innerHTML='No celular, abra este mesmo link e coloque na tela de início. No computador, dá para usar direto no navegador (no Chrome, o ícone de instalar fica na barra de endereço).'}
 if(ios||and)document.getElementById('botao').hidden=true;
+if(ios)document.getElementById('atl').hidden=false;
 // logo "órbita na palavra"
 function logo(svg){const NS='http://www.w3.org/2000/svg',CR='#f6e7cb';svg.setAttribute('viewBox','0 0 420 170');const t=document.createElementNS(NS,'text');t.textContent='Calisto';t.setAttribute('x',210);t.setAttribute('y',104);t.setAttribute('text-anchor','middle');t.setAttribute('font-family','Panchang, sans-serif');t.setAttribute('font-weight',500);t.setAttribute('font-size',64);t.setAttribute('fill',CR);svg.appendChild(t);
  const b=t.getBBox();if(!b.width)return;const cx=b.x+b.width/2,cy=b.y+b.height*.6,rx=b.width*.58,ry=b.height*.42,deg=-7,r=deg*Math.PI/180,l=[cx-rx*Math.cos(r),cy-rx*Math.sin(r)],p=[cx+rx*Math.cos(r),cy+rx*Math.sin(r)];
