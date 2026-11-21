@@ -281,7 +281,16 @@ input.f,textarea.f{background:var(--panel);border:1px solid var(--line);border-r
 #helpBtn{min-width:34px;padding:4px;color:var(--muted)}
 .toast .tundo{margin-left:12px;background:none;border:0;color:var(--bg);font-weight:800;text-decoration:underline;padding:2px 4px;min-height:0;font-size:inherit}
 #tuner{position:fixed;inset:0;z-index:26;background:var(--bg);display:flex;flex-direction:column}
-#tuner .tnbody.inR{animation:tnInR .22s ease-out}#tuner .tnbody.inL{animation:tnInL .22s ease-out}@keyframes tnInR{from{opacity:0;transform:translateX(36px)}}@keyframes tnInL{from{opacity:0;transform:translateX(-36px)}}
+/* arrastar com a tela acompanhando o dedo (como no iPhone) */
+#tuner.tddrag{overflow:hidden}#tuner.tddrag .tnbody{will-change:transform}
+#tuner .tnbody.tdpeek{position:absolute;left:0;width:100%;box-sizing:border-box}
+#tuner.tdclose{will-change:transform;box-shadow:-12px 0 32px rgba(0,0,0,.45)}
+#lib.pldrag{overflow:hidden}#lib.pldrag #vPl,#lib.pldrag #list{position:relative;z-index:3;will-change:transform}#lib.pldrag #list{overflow:hidden}
+#lib.noanim #vPls{animation:none!important}
+.plunder{position:fixed;left:0;z-index:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);pointer-events:none;will-change:transform;box-sizing:border-box}
+.plunder .list{flex:1;min-height:0}
+.pldim{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;will-change:opacity}
+.plcover{position:fixed;left:0;z-index:2;background:var(--bg);pointer-events:none;will-change:transform;box-shadow:-12px 0 32px rgba(0,0,0,.4)}
 #tuner .tnhead{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 0 10px;border-bottom:1px solid var(--line)}
 #tuner .tnbody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:16px}
 #tnNote{font-size:min(34vw,9rem);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;color:var(--ink);transition:color .15s}
@@ -811,7 +820,7 @@ $('list').addEventListener('click',e=>{const sh=e.target.closest('[data-spshare]
   if(d.unplay){e.stopPropagation();setPlayed(d.unplay,false);drawList();toast('Desmarcada')}
   else if(d.addto)pickPlaylists(d.addto);
   else if(d.open){const ids=[...$('list').querySelectorAll('[data-open]')].map(x=>x.dataset.open);open(ids,ids.indexOf(d.open),'')} // abre na ordem da lista: dá para ir à próxima/anterior
-  else if(d.pl){curPl=d.pl;view='pl';{const p=plOf(d.pl);plSnapId=d.pl;plSnap=p?JSON.stringify(p):''}drawList();$('list').scrollTop=0}
+  else if(d.pl){shotPls(d.pl);curPl=d.pl;view='pl';{const p=plOf(d.pl);plSnapId=d.pl;plSnap=p?JSON.stringify(p):''}drawList();$('list').scrollTop=0}
   else if(d.plplay)playPl(d.plplay,0);
   else{const p=plOf(curPl);if(!p)return;
     if(d.play!=null)playPl(p.id,+d.play);
@@ -854,12 +863,35 @@ $('tBib').addEventListener('click',()=>{if(view==='pl')leavePl();view='bib';draw
 $('tPls').addEventListener('click',()=>{if(view==='pl')leavePl();view='pls';drawList()});
 $('tSpo').addEventListener('click',()=>{view='spo';drawList()});
 $('tComp').addEventListener('click',()=>{view='comp';drawList()});
-$('newPl').addEventListener('click',()=>askName('Nova playlist','',name=>{const p={id:uid(),name,items:[]};pls.push(p);save();curPl=p.id;view='pl';drawList();pickSongs()}));
+$('newPl').addEventListener('click',()=>askName('Nova playlist','',name=>{const p={id:uid(),name,items:[]};pls.push(p);save();shotPls(p.id);curPl=p.id;view='pl';drawList();pickSongs()}));
 let plSnap='',plSnapId=null;
 function leavePl(){const p=plOf(plSnapId);if(p&&!p.arch&&JSON.stringify(p)!==plSnap){const i=pls.indexOf(p);if(i>0){pls.splice(i,1);pls.unshift(p);save()}}plSnapId=null} /* playlist mexida volta para o topo da lista */
 $('plBack').addEventListener('click',()=>{leavePl();view='pls';drawList()});
-/* na playlist aberta, arrastar o dedo para a direita volta às playlists (no palco não) */
-swipeH($('lib'),e=>view==='pl'&&$('stage').hidden&&$('tuner').hidden&&!e.target.closest('.hd,li.sw,input,textarea'),d=>{if(d<0&&view==='pl'&&!sw)$('plBack').click()});
+/* na playlist aberta, arrastar o dedo para a direita volta às playlists, com a tela acompanhando (no palco não).
+   Por baixo aparece uma cópia da lista de playlists, guardada quando a playlist foi aberta */
+let plShot=null,pd=null;
+function shotPls(pl){if(view!=='pls')return;const w=document.createElement('div');w.className='plunder wrapx';w.setAttribute('aria-hidden','true');
+  [$('q').parentNode,$('vPls'),$('list')].forEach(n=>{const c=n.cloneNode(true);c.removeAttribute('id');c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));w.appendChild(c)});
+  plShot={w,pl,top:$('list').scrollTop}}
+function plShotFallback(){const w=document.createElement('div');w.className='plunder wrapx';w.setAttribute('aria-hidden','true'); /* sem cópia: mostra o topo da tela de playlists e a lista em branco */
+  [$('q').parentNode,$('vPls')].forEach(n=>{const c=n.cloneNode(true);c.hidden=false;c.removeAttribute('id');c.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));w.appendChild(c)});
+  const ul=document.createElement('ul');ul.className='list';w.appendChild(ul);return {w,pl:curPl,top:0}}
+dragH($('lib'),{ok:e=>view==='pl'&&!pd&&!drag&&$('stage').hidden&&$('tuner').hidden&&$('modal').hidden&&!e.target.closest('.hd,li.sw,input,textarea'),
+  start:dir=>{if(dir<0||drag||$('list').querySelector('li.sw'))return false;
+    const lib=$('lib'),W=lib.clientWidth,a=$('vPl').getBoundingClientRect(),b=$('list').getBoundingClientRect(),top=a.top,hh=b.bottom-a.top;
+    const shot=plShot&&plShot.pl===curPl?plShot:plShotFallback(),u=shot.w,dim=document.createElement('i'),cover=document.createElement('div');
+    dim.className='pldim';cover.className='plcover';
+    for(const el of [u,cover]){el.style.top=top+'px';el.style.height=hh+'px';el.style.width=W+'px'}
+    u.appendChild(dim);tx(u,-.3*W);dim.style.opacity=.18;tx(cover,0);
+    lib.classList.add('pldrag');lib.append(u,cover);const ul=u.querySelector('.list');if(ul)ul.scrollTop=shot.top;
+    pd={lib,W,u,dim,cover,shot,els:[$('vPl'),$('list'),cover]}},
+  move:dx=>{if(!pd)return;const x=Math.max(0,dx),{W}=pd;pd.els.forEach(el=>tx(el,x));tx(pd.u,(x-W)*.3);pd.dim.style.opacity=.18*(1-x/W)},
+  end:(dx,vx)=>{if(!pd)return;const z=pd,{lib,W,u,dim,cover,shot,els}=z,x=Math.max(0,dx),ok=swipeOk(x,vx,W);swNoClick=Date.now();
+    slide([...els.map(el=>[el,ok?W:0]),[u,ok?0:-.3*W],[dim,null,ok?0:.18]],slideMs(ok?W-x:x,vx),()=>{
+      if(ok){leavePl();view='pls';lib.classList.add('noanim');drawList();plShot=null}
+      lib.classList.remove('pldrag');[$('vPl'),$('list')].forEach(el=>{el.style.transform=''});cover.remove();dim.remove();u.remove();u.style.transform='';
+      if(ok){$('list').scrollTop=shot.top;requestAnimationFrame(()=>requestAnimationFrame(()=>lib.classList.remove('noanim')))}
+      pd=null})}});
 $('plRen').addEventListener('click',()=>{const p=plOf(curPl);if(p)askName('Renomear playlist',p.name,name=>{p.name=name;save();drawList()})});
 $('plPlay').addEventListener('click',()=>playPl(curPl,0));
 $('plAdd').addEventListener('click',()=>pickSongs());
@@ -1231,14 +1263,45 @@ function toolPanel(p){ui.tp=p;store.set('ui',ui);['tn','mt','dp'].forEach(k=>$('
 function tunerOpen(p){stopScroll();$('tuner').hidden=false;$('mtPill').hidden=true;toolPanel(typeof p==='string'?p:'tn')} /* abre sempre no afinador */
 function tunerClose(){$('tuner').hidden=true;micStop();dpStop();if(!mtOn)mtPaused=false;pillUi()}
 $('tuner').querySelector('.seg').addEventListener('click',e=>{const b=e.target.closest('[data-tp]');if(b)toolPanel(b.dataset.tp)});
-/* arrastar o dedo para os lados troca de ferramenta: afinador ⇄ metrônomo ⇄ diapasão */
-function swipeH(el,ok,fn){let s=null;
-  el.addEventListener('touchstart',e=>{s=null;if(e.touches.length!==1||!ok(e))return;const t=e.touches[0];s={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
-  el.addEventListener('touchcancel',()=>{s=null},{passive:true});
-  el.addEventListener('touchend',e=>{if(!s)return;const t=e.changedTouches[0],dx=t.clientX-s.x,dy=t.clientY-s.y,ms=Date.now()-s.t;s=null;
-    if(ms<900&&Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.8)fn(dx<0?1:-1)},{passive:true})}
-swipeH($('tuner'),e=>!e.target.closest('input,textarea,.mtbig'),d=>{const L=['tn','mt','dp'],i=L.indexOf(ui.tp)+d;if(i<0||i>=L.length)return;
-  toolPanel(L[i]);const b=$('p'+L[i][0].toUpperCase()+L[i].slice(1));b.classList.remove('inL','inR');void b.offsetWidth;b.classList.add(d>0?'inR':'inL')});
+/* ---------- arrastar para os lados com a tela acompanhando o dedo (como no iPhone) ---------- */
+function dragH(el,o){let s=null,raf=0;
+  const fin=cancel=>{if(!s)return;const z=s;s=null;cancelAnimationFrame(raf);raf=0;if(!z.lock)return;
+    const h=z.h,now=performance.now(),last=h[h.length-1];let vx=0;
+    if(!cancel&&last&&now-last[0]<90){const old=h.find(q=>last[0]-q[0]<=100)||h[0],dt=last[0]-old[0];if(dt>0)vx=(last[1]-old[1])/dt}
+    o.end(cancel?0:z.dx,vx)};
+  el.addEventListener('touchstart',e=>{if(s&&s.lock)return;s=null;if(e.touches.length!==1||!o.ok(e))return;const t=e.touches[0];s={x:t.clientX,y:t.clientY,dx:0,lock:false,h:[]}},{passive:true});
+  el.addEventListener('touchmove',e=>{if(!s)return;if(e.touches.length!==1){fin(true);return}const t=e.touches[0],dx=t.clientX-s.x,dy=t.clientY-s.y;
+    if(!s.lock){if(Math.abs(dx)<7&&Math.abs(dy)<7)return;if(Math.abs(dx)>Math.abs(dy)*1.2&&o.start(dx>0?1:-1)!==false)s.lock=true;else{s=null;return}}
+    if(e.cancelable)e.preventDefault();s.dx=dx;const now=performance.now();s.h.push([now,t.clientX]);while(s.h.length>2&&now-s.h[0][0]>150)s.h.shift();
+    if(!raf)raf=requestAnimationFrame(()=>{raf=0;if(s&&s.lock)o.move(s.dx)})},{passive:false});
+  el.addEventListener('touchend',()=>fin(false),{passive:true});el.addEventListener('touchcancel',()=>fin(true),{passive:true})}
+const tx=(el,x)=>{el.style.transform=`translate3d(${x}px,0,0)`};
+/* solta: termina o movimento na velocidade do dedo */
+function slide(list,ms,done){list.forEach(([el,x,op])=>{el.style.transition=`transform ${ms}ms cubic-bezier(.2,.85,.25,1),opacity ${ms}ms ease-out`;if(x!=null)tx(el,x);if(op!=null)el.style.opacity=op});
+  setTimeout(()=>{list.forEach(([el])=>{el.style.transition=''});done&&done()},ms+30)}
+const slideMs=(rem,vx)=>Math.round(Math.max(170,Math.min(360,Math.abs(rem)/Math.max(Math.abs(vx),.9))));
+const swipeOk=(d,v,W)=>v>-.2&&(d>W*.4||(v>.35&&d>24)); /* d e v já no sentido do gesto */
+/* ferramentas: afinador ⇄ metrônomo ⇄ diapasão; no afinador, arrastar para a direita volta para onde estava */
+let td=null;const tPanel=k=>$('p'+k[0].toUpperCase()+k.slice(1));
+dragH($('tuner'),{ok:e=>!$('tuner').hidden&&!td&&!e.target.closest('input,textarea,.mtbig'),
+  start:dir=>{const L=['tn','mt','dp'],i=Math.max(0,L.indexOf(ui.tp)),T=$('tuner'),W=T.clientWidth,cur=tPanel(L[i]),k=i-dir;
+    if(k<0){td={m:'close',T,W};T.classList.add('tdclose');return}
+    T.classList.add('tddrag');
+    if(k>=L.length){td={m:'band',T,W,cur};return}
+    const n=tPanel(L[k]);n.classList.add('tdpeek');n.style.top=cur.offsetTop+'px';n.style.height=cur.offsetHeight+'px';tx(n,-dir*W);n.hidden=false;
+    td={m:'panel',T,W,cur,n,k:L[k],dir}},
+  move:dx=>{if(!td)return;const{m,T,W,cur,n,dir}=td;
+    if(m==='close')tx(T,Math.max(0,dx));
+    else if(m==='band')tx(cur,dx*.25);
+    else{const x=dir>0?Math.max(0,dx):Math.min(0,dx);tx(cur,x);tx(n,x-dir*W)}},
+  end:(dx,vx)=>{if(!td)return;const z=td,{m,T,W,cur,n,dir}=z;
+    if(m==='close'){const x=Math.max(0,dx),ok=swipeOk(x,vx,W);
+      slide([[T,ok?W:0]],slideMs(ok?W-x:x,vx),()=>{if(ok)tunerClose();T.classList.remove('tdclose');T.style.transform='';td=null});return}
+    if(m==='band'){slide([[cur,0]],220,()=>{cur.style.transform='';T.classList.remove('tddrag');td=null});return}
+    const x=dir>0?Math.max(0,dx):Math.min(0,dx),ok=swipeOk(x*dir,vx*dir,W);
+    slide([[cur,ok?dir*W:0],[n,ok?0:-dir*W]],slideMs(ok?W-Math.abs(x):x,vx),()=>{
+      if(ok)toolPanel(z.k);else n.hidden=true;
+      n.classList.remove('tdpeek');n.style.top=n.style.height=n.style.transform=cur.style.transform='';T.classList.remove('tddrag');td=null})}});
 // metrônomo: agenda as batidas no relógio do áudio (não atrasa mesmo com a tela ocupada)
 const MT=Object.assign({bpm:100,beats:4,unit:4,acc:[0],vol:80},ui.mt||{});
 let mtOn=false,mtNext=0,mtBeat=0,mtTimer=0,mtQ=[],mtG=null,mtRaf=0,mtTaps=[];
