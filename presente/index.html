@@ -7,7 +7,7 @@
 <style>
 /* Página de boas-vindas do presente (kit dos testadores). ?para=Nome personaliza o título. */
 :root{--bg:#120a07;--panel:#1d110b;--line:#3a2418;--ink:#f6e7cb;--muted:#b89a80;--ocre:#e8b46a;color-scheme:dark}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,system-ui,sans-serif}
+*{box-sizing:border-box}[hidden]{display:none!important}html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 -apple-system,system-ui,sans-serif}
 .hero{position:relative;height:300px;overflow:hidden;background:#07050a}
 .hero .j{position:absolute;left:-20%;width:140%;max-width:none;bottom:-55%;opacity:.9;filter:saturate(1.2)}
 @media (min-width:700px){.hero{height:340px}.hero .j{left:10%;width:80%;bottom:-120%}}
@@ -20,7 +20,7 @@ p{margin:0;color:var(--muted)}p b{color:var(--ink)}
 ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}
 li{display:grid;grid-template-columns:30px 1fr;gap:12px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}
 li em{font-style:normal;width:30px;height:30px;border-radius:50%;border:1px solid var(--ocre);color:var(--ocre);display:grid;place-items:center;font-weight:700}
-li b{display:block;margin-bottom:2px}li span{color:var(--muted);font-size:.95rem}
+li>div>b{display:block;margin-bottom:2px}li span b{color:var(--ink)}li span{color:var(--muted);font-size:.95rem}
 .go{display:block;text-align:center;background:var(--ocre);color:#1a0f0a;text-decoration:none;font-weight:700;border-radius:999px;padding:15px;font-size:1.05rem}
 .go2{display:block;text-align:center;border:1px solid var(--line);color:var(--ink);text-decoration:none;border-radius:999px;padding:13px}
 .share{display:inline-block;vertical-align:-3px;width:18px;height:18px}
@@ -33,14 +33,16 @@ li b{display:block;margin-bottom:2px}li span{color:var(--muted);font-size:.95rem
 <h1 id="tt">Isso é seu.</h1>
 <p>Um presente do <b>Gui Monteiro</b>: o app que ele usa no palco, agora no seu bolso. Cifras e playlists com o seu tom, rolagem automática, metrônomo, afinador e um cantinho para compor. No show, funciona sem internet.</p>
 <ol>
- <li><em>1</em><div><b>Abra o Calisto e coloque na tela de início</b><span id="inst">Assim ele abre como app, funciona sem internet e se atualiza sozinho.</span><a class="go" id="abrir" href="../" style="margin-top:12px">Abrir o Calisto</a></div></li>
- <li><em>2</em><div><b>Crie a sua conta</b><span>No app, toque em <b>Entrar</b> e depois em <b>Criar conta</b> (e-mail e uma senha). Tudo fica salvo nela: se trocar de celular, nada se perde.</span></div></li>
- <li><em>3</em><div><b>Traga suas cifras</b><span>Toque em <b>+ Música</b>: dá para colar uma cifra de qualquer site, escrever do zero ou importar arquivos do OnSong. Logo na entrada tem um tour de 1 minuto e uma música de exemplo para testar.</span></div></li>
- <li id="atl" hidden><em>4</em><div><b>Atalho do iPhone: cifra em 2 toques</b><span>Instale o atalho <b>Mandar pro Calisto</b>. No Cifra Club (no Safari), toque em <b>Compartilhar</b> › <b>Mandar pro Calisto</b>; depois, no Calisto, <b>+ Música › Colar do atalho</b>. Funciona com listas inteiras do Cifra Club.</span><a class="go2" href="../atalho/Mandar%20pro%20Calisto.shortcut" style="margin-top:10px">Instalar o atalho</a></div></li>
- <li><em id="nPc">4</em><div><b>O computador é seu aliado</b><span>Abra <b>estudiojupiter.github.io/calisto</b> no computador e entre na mesma conta. O que você muda num aparelho aparece no outro em segundos. Lá, o <b>Botão Calisto</b> traz músicas e listas inteiras do Cifra Club de uma vez.</span><a class="go2" id="botao" href="../botao.html" style="margin-top:10px">Botão Calisto</a></div></li>
- <li><em id="nSp">5</em><div><b>Spotify</b><span>Para criar playlists no Spotify a partir do Calisto: no app, toque em <b>☁︎ › Sobre você</b> e coloque o e-mail da sua conta do Spotify. Enquanto o app está em teste, o Gui libera o acesso.</span></div></li>
+ <li><em>1</em><div><b>Coloque na tela de início</b><span id="inst">Assim ele abre como app, funciona sem internet e se atualiza sozinho.</span></div></li>
+ <li><em>2</em><div><b>Crie a sua conta</b><span>No app, toque em <b>Entrar</b> › <b>Criar conta</b> (e-mail e uma senha). Tudo fica salvo nela, e um tour de 1 minuto mostra o resto.</span></div></li>
+ <li><em>3</em><div><b>Traga suas cifras</b><span id="cif">No celular, copie a cifra em qualquer site e cole em <b>+ Música</b>, ou escreva do zero.</span></div></li>
+ <li><em>4</em><div><b>O computador é seu aliado</b><span>Abra <b>estudiojupiter.github.io/calisto</b> no computador e entre na mesma conta: o que você muda num aparelho aparece no outro em segundos. Lá, o <b>Botão Calisto</b> traz músicas e listas inteiras do Cifra Club de uma vez.</span></div></li>
 </ol>
+<a class="go" id="abrir" href="../">Abrir o Calisto</a>
+<a class="go2" id="atl" href="../atalho/Mandar%20pro%20Calisto.shortcut" hidden>Instalar o atalho “Mandar pro Calisto”</a>
+<a class="go2" id="botao" href="../botao.html">Botão Calisto (computador)</a>
 <div class="note"><p>É um teste: pode ter coisa quebrada. Achou algo, ou teve uma ideia? No app, toque em <b>?</b> e depois em <b>Mandar sugestão</b>.</p>
+<p><b>Spotify:</b> para criar playlists no Spotify pelo Calisto, coloque o e-mail da sua conta do Spotify em <b>☁︎ › Sobre você</b>, dentro do app. Como o app está em teste, o acesso é liberado em seguida.</p>
 <p>Seus dados ficam na sua conta. Não são vendidos nem compartilhados.</p>
 <span class="sig"><svg viewBox="0 0 18.6 27.6" aria-hidden="true"><use href="#col" width="100%" height="100%"/></svg>Estúdio Júpiter</span></div>
 </main>
@@ -50,11 +52,12 @@ if(nome)document.getElementById('tt').textContent=nome+', isso é seu.';
 const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),and=/Android/.test(ua);
 const SH='<svg class="share" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2v11M6 6l4-4 4 4"/><path d="M5 9H4v9h12V9h-1"/></svg>';
 const inst=document.getElementById('inst');
-if(ios)inst.innerHTML='Toque no botão abaixo. Quando o Calisto abrir, toque em <b>Compartilhar</b> '+SH+' e depois em <b>Adicionar à Tela de Início</b>. Daí em diante, abra sempre pelo ícone: assim ele funciona sem internet e se atualiza sozinho.';
-else if(and)inst.innerHTML='Toque no botão abaixo. Quando o Calisto abrir, toque em <b>Instalar</b> no aviso de baixo (ou no Chrome: <b>⋮</b> › <b>Instalar app</b>). Daí em diante, abra sempre pelo ícone.';
+if(ios)inst.innerHTML='Toque em <b>Abrir o Calisto</b>, no fim desta página. Quando ele abrir, toque em <b>Compartilhar</b> '+SH+' › <b>Adicionar à Tela de Início</b>. Daí em diante, abra sempre pelo ícone: assim ele funciona sem internet e se atualiza sozinho.';
+else if(and)inst.innerHTML='Toque em <b>Abrir o Calisto</b>, no fim desta página. Quando ele abrir, toque em <b>Instalar</b> no aviso de baixo (ou, no Chrome, <b>⋮</b> › <b>Instalar app</b>). Daí em diante, abra sempre pelo ícone.';
 else{inst.innerHTML='No celular, abra este mesmo link e coloque na tela de início. No computador, dá para usar direto no navegador (no Chrome, o ícone de instalar fica na barra de endereço).'}
 if(ios||and)document.getElementById('botao').hidden=true;
-if(ios){document.getElementById('atl').hidden=false;document.getElementById('nPc').textContent='5';document.getElementById('nSp').textContent='6'}
+else document.getElementById('cif').innerHTML='Aqui no computador, abra a cifra no Cifra Club e clique no <b>Botão Calisto</b> (instale pelo botão no fim da página). Também dá para escrever do zero em <b>+ Música</b>.';
+if(ios){document.getElementById('atl').hidden=false;document.getElementById('cif').innerHTML='No Safari, abra a cifra no Cifra Club e toque em <b>Compartilhar</b> '+SH+' › <b>Mandar pro Calisto</b>. Depois, no Calisto, <b>+ Música</b> › <b>Colar do atalho</b>. Funciona até com listas inteiras. Antes, instale o atalho pelo botão no fim da página. Também dá para escrever do zero.'}
 if(/FBAN|FBAV|Instagram|Line\//.test(ua))inst.innerHTML='<b>Abra este link no navegador</b> (toque em ⋯ › Abrir no Safari ou no Chrome): por aqui não dá para instalar.';
 // logo "órbita na palavra"
 function logo(svg){const NS='http://www.w3.org/2000/svg',CR='#f6e7cb';svg.setAttribute('viewBox','0 0 420 170');const t=document.createElementNS(NS,'text');t.textContent='Calisto';t.setAttribute('x',210);t.setAttribute('y',104);t.setAttribute('text-anchor','middle');t.setAttribute('font-family','Panchang, sans-serif');t.setAttribute('font-weight',500);t.setAttribute('font-size',64);t.setAttribute('fill',CR);svg.appendChild(t);
